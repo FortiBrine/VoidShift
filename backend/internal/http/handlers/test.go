@@ -1,0 +1,21 @@
+package handlers
+
+import (
+	"net/http"
+
+	"github.com/FortiBrine/VoidShift/internal/http/middleware"
+	"github.com/FortiBrine/VoidShift/internal/user"
+	"github.com/labstack/echo/v5"
+)
+
+func TestHandler(c *echo.Context) error {
+	u, ok := c.Get(middleware.ContextUserIDKey).(*user.User)
+
+	if !ok || u == nil {
+		return c.JSON(http.StatusUnauthorized, "failed to get session")
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"user_id": u.ID,
+	})
+}

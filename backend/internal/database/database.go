@@ -1,0 +1,19 @@
+package database
+
+import (
+	"github.com/FortiBrine/VoidShift/internal/config"
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+)
+
+func NewSqliteDatabase(config config.Config) (*gorm.DB, error) {
+	db, err := gorm.Open(
+		sqlite.Open(config.DatabasePath), &gorm.Config{},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
