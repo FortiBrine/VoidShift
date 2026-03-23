@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Repository interface {
@@ -26,7 +27,10 @@ func (r *GormRepository) Migrate() error {
 }
 
 func (r *GormRepository) CreateUser(ctx context.Context, user *User) error {
-	return gorm.G[User](r.db).Create(ctx, user)
+	return gorm.G[User](r.db, clause.OnConflict{
+		Columns:   []clause.Column{{Name: "username"}},
+		DoNothing: true,
+	}).Create(ctx, user)
 }
 
 func (r *GormRepository) GetByID(ctx context.Context, id uint) (*User, error) {
