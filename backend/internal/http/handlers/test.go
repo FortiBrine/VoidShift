@@ -12,7 +12,7 @@ func TestHandler(c *echo.Context) error {
 	u, ok := c.Get(middleware.ContextUserIDKey).(*user.User)
 
 	if !ok || u == nil {
-		return c.JSON(http.StatusUnauthorized, "failed to get session")
+		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
 	}
 
 	return c.JSON(http.StatusOK, map[string]any{

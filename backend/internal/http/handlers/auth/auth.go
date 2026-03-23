@@ -1,12 +1,15 @@
 package auth
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/FortiBrine/VoidShift/internal/session"
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/labstack/echo/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type LoginRequestDto struct {
@@ -32,34 +35,39 @@ func NewLoginHandler(
 func (h *LoginHandler) Login(c *echo.Context) error {
 	req := new(LoginRequestDto)
 	if err := c.Bind(req); err != nil {
-		return c.String(http.StatusBadRequest, "bad request")
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 
 	if err := c.Validate(req); err != nil {
-		return c.String(http.StatusBadRequest, err.Error())
+		return err
 	}
 
 	ctx := c.Request().Context()
 
-	user, err := h.userService.GetByUsername(ctx, req.Username)
+	u, err := h.userService.GetByUsername(ctx, req.Username)
 
 	if err != nil {
-		return c.String(http.StatusNotFound, "user not found")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
+		}
+
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password))
 
 	if err != nil {
-		return c.String(http.StatusNotFound, "user not found")
+		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
 	}
 
 	sessionID, expiresAt, err := h.sessionService.CreateUserSession(
 		ctx,
-		user.ID, c.Request().UserAgent(), c.RealIP(),
+		u.ID, c.Request().UserAgent(), c.RealIP(),
 	)
 
 	if err != nil {
-		return c.String(http.StatusInternalServerError, err.Error())
+		fmt.Printf("error creating session: %v\n", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
 
 	c.SetCookie(BuildSessionCookie(sessionID, expiresAt))
@@ -77,7 +85,8 @@ func (h *LoginHandler) Logout(c *echo.Context) error {
 		err := h.sessionService.LogoutSession(ctx, cookie.Value)
 
 		if err != nil {
-			return c.String(http.StatusInternalServerError, "internal server error")
+			fmt.Printf("error logout: %v\n", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 		}
 	}
 

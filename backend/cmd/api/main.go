@@ -10,21 +10,14 @@ import (
 
 	"github.com/FortiBrine/VoidShift/internal/config"
 	"github.com/FortiBrine/VoidShift/internal/database"
+	"github.com/FortiBrine/VoidShift/internal/http"
 	"github.com/FortiBrine/VoidShift/internal/http/middleware"
 	"github.com/FortiBrine/VoidShift/internal/http/routes"
 	"github.com/FortiBrine/VoidShift/internal/session"
 	"github.com/FortiBrine/VoidShift/internal/user"
-	"github.com/go-playground/validator/v10"
+	"github.com/FortiBrine/VoidShift/internal/validator"
 	"github.com/labstack/echo/v5"
 )
-
-type CustomValidator struct {
-	validator *validator.Validate
-}
-
-func (cv *CustomValidator) Validate(i interface{}) error {
-	return cv.validator.Struct(i)
-}
 
 func main() {
 	cfg := config.Load()
@@ -56,7 +49,8 @@ func main() {
 
 	e := echo.New()
 
-	e.Validator = &CustomValidator{validator: validator.New()}
+	e.Validator = validator.NewCustomValidator()
+	e.HTTPErrorHandler = http.CustomErrorHandler
 
 	middleware.Register(e)
 
@@ -69,7 +63,7 @@ func main() {
 	}
 
 	if err := startConfig.Start(ctx, e); err != nil {
-		e.Logger.Error("failed to start server", "error", err)
+		e.Logger.Error("failed to start server", "validator", err)
 	}
 
 }
