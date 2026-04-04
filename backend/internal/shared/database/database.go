@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/FortiBrine/VoidShift/internal/config"
+	"github.com/FortiBrine/VoidShift/internal/shared/config"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )

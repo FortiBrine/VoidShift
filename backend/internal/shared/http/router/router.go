@@ -1,11 +1,10 @@
-package routes
+package router
 
 import (
+	"github.com/FortiBrine/VoidShift/internal/auth"
 	"github.com/FortiBrine/VoidShift/internal/embed"
-	"github.com/FortiBrine/VoidShift/internal/http/handlers"
-	"github.com/FortiBrine/VoidShift/internal/http/handlers/auth"
-	"github.com/FortiBrine/VoidShift/internal/http/middleware"
 	"github.com/FortiBrine/VoidShift/internal/session"
+	"github.com/FortiBrine/VoidShift/internal/shared/http/handlers"
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/labstack/echo/v5"
 )
@@ -33,7 +32,7 @@ func (r *Router) Register(e *echo.Echo) {
 	a.POST("/login", auth.NewLoginHandler(r.sessionService, r.userService).Login)
 
 	protected := api.Group("/protected")
-	protected.Use(middleware.AuthMiddleware(r.sessionService, r.userService))
+	protected.Use(auth.Middleware(r.sessionService, r.userService))
 	protected.GET("/test", handlers.TestHandler)
 
 	e.StaticFS("/", echo.MustSubFS(embed.WebuiFiles, "webui"))

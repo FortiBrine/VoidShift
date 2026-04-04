@@ -3,13 +3,13 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/FortiBrine/VoidShift/internal/http/middleware"
+	"github.com/FortiBrine/VoidShift/internal/auth"
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/labstack/echo/v5"
 )
 
 func TestHandler(c *echo.Context) error {
-	u, ok := c.Get(middleware.ContextUserIDKey).(*user.User)
+	u, ok := c.Get(auth.ContextUserIDKey).(*user.User)
 
 	if !ok || u == nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")

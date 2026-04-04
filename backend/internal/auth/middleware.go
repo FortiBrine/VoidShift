@@ -1,11 +1,10 @@
-package middleware
+package auth
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/FortiBrine/VoidShift/internal/http/handlers/auth"
 	"github.com/FortiBrine/VoidShift/internal/session"
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/labstack/echo/v5"
@@ -13,13 +12,13 @@ import (
 
 const ContextUserIDKey = "userID"
 
-func AuthMiddleware(
+func Middleware(
 	sessionService *session.Service,
 	userService *user.Service,
 ) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			cookie, err := c.Cookie(auth.SessionCookieName)
+			cookie, err := c.Cookie(SessionCookieName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusBadRequest, "missing session cookie")
 			}

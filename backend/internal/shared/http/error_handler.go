@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/FortiBrine/VoidShift/internal/validator"
+	"github.com/FortiBrine/VoidShift/internal/shared/http/validator"
 	"github.com/labstack/echo/v5"
 )
 

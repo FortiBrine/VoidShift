@@ -8,14 +8,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/FortiBrine/VoidShift/internal/config"
-	"github.com/FortiBrine/VoidShift/internal/database"
-	"github.com/FortiBrine/VoidShift/internal/http"
-	"github.com/FortiBrine/VoidShift/internal/http/middleware"
-	"github.com/FortiBrine/VoidShift/internal/http/routes"
 	"github.com/FortiBrine/VoidShift/internal/session"
+	"github.com/FortiBrine/VoidShift/internal/shared/config"
+	"github.com/FortiBrine/VoidShift/internal/shared/database"
+	"github.com/FortiBrine/VoidShift/internal/shared/http"
+	"github.com/FortiBrine/VoidShift/internal/shared/http/middleware"
+	"github.com/FortiBrine/VoidShift/internal/shared/http/router"
+	"github.com/FortiBrine/VoidShift/internal/shared/http/validator"
 	"github.com/FortiBrine/VoidShift/internal/user"
-	"github.com/FortiBrine/VoidShift/internal/validator"
 	"github.com/labstack/echo/v5"
 )
 
@@ -54,8 +54,8 @@ func main() {
 
 	middleware.Register(e)
 
-	router := routes.NewRouter(sessionService, userService)
-	router.Register(e)
+	r := router.NewRouter(sessionService, userService)
+	r.Register(e)
 
 	startConfig := echo.StartConfig{
 		Address:         cfg.HttpAddress,
