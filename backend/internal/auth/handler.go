@@ -72,10 +72,7 @@ func (h *LoginHandler) Login(c *echo.Context) error {
 
 	c.SetCookie(BuildSessionCookie(sessionID, expiresAt))
 
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "success",
-	})
-
+	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *LoginHandler) Logout(c *echo.Context) error {
@@ -91,6 +88,5 @@ func (h *LoginHandler) Logout(c *echo.Context) error {
 	}
 
 	c.SetCookie(BuildExpiredSessionCookie())
-	return c.String(http.StatusNoContent, "")
-
+	return c.NoContent(http.StatusNoContent)
 }

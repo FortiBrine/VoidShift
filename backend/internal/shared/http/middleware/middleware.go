@@ -10,5 +10,5 @@ func Register(
 ) {
 	e.Use(middleware.RequestLogger())
 	e.Use(middleware.Recover())
-	//e.Use(AuthMiddleware(sessionService, userService))
+	e.Use(middleware.Secure())
 }

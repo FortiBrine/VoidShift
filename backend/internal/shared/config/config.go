@@ -10,8 +10,9 @@ import (
 )
 
 type Config struct {
-	JwtSecretKey    string
-	DatabasePath    string
+	SqliteDatabasePath string
+	MysqlDsn           string
+
 	GracefulTimeout time.Duration
 	HttpAddress     string
 	AdminUsername   string
@@ -29,8 +30,9 @@ func Load() Config {
 	}
 
 	return Config{
-		JwtSecretKey:    os.Getenv("JWT_SECRET_KEY"),
-		DatabasePath:    os.Getenv("DATABASE_PATH"),
+		SqliteDatabasePath: os.Getenv("SQLITE_DATABASE_PATH"),
+		MysqlDsn:           os.Getenv("MYSQL_DSN"),
+
 		GracefulTimeout: time.Duration(gracefulTimeout) * time.Second,
 		HttpAddress:     os.Getenv("HTTP_ADDRESS"),
 		AdminUsername:   os.Getenv("ADMIN_USERNAME"),

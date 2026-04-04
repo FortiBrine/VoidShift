@@ -2,13 +2,13 @@ package database
 
 import (
 	"github.com/FortiBrine/VoidShift/internal/shared/config"
-	"github.com/glebarez/sqlite"
+	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
-func NewSqliteDatabase(config config.Config) (*gorm.DB, error) {
+func NewMysqlDatabase(config config.Config) (*gorm.DB, error) {
 	db, err := gorm.Open(
-		sqlite.Open(config.DatabasePath), &gorm.Config{},
+		mysql.Open(config.MysqlDsn), &gorm.Config{},
 	)
 
 	if err != nil {

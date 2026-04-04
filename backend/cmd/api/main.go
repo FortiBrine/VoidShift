@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"os/signal"
@@ -17,19 +18,33 @@ import (
 	"github.com/FortiBrine/VoidShift/internal/shared/http/validator"
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/labstack/echo/v5"
+	"gorm.io/gorm"
 )
 
 func main() {
 	cfg := config.Load()
-	db, err := database.NewSqliteDatabase(cfg)
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+	databaseInitialize := func(cfg config.Config) (*gorm.DB, error) {
+		if cfg.SqliteDatabasePath != "" {
+			return database.NewSqliteDatabase(cfg)
+		}
+
+		if cfg.MysqlDsn != "" {
+			return database.NewMysqlDatabase(cfg)
+		}
+
+		return nil, errors.New("no database configured")
+	}
+
+	db, err := databaseInitialize(cfg)
 
 	if err != nil {
 		log.Printf("failed to initialize database: %v", err)
 		return
 	}
+
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
 	sessionRepository := session.NewGormRepository(db)
 	sessionService := session.NewService(sessionRepository, 5*24*time.Hour)
