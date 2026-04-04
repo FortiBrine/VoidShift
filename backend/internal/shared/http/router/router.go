@@ -1,6 +1,9 @@
 package router
 
 import (
+	"io/fs"
+	"strings"
+
 	"github.com/FortiBrine/VoidShift/internal/auth"
 	"github.com/FortiBrine/VoidShift/internal/embed"
 	"github.com/FortiBrine/VoidShift/internal/session"
@@ -35,5 +38,23 @@ func (r *Router) Register(e *echo.Echo) {
 	protected.Use(auth.Middleware(r.sessionService, r.userService))
 	protected.GET("/test", handlers.TestHandler)
 
-	e.StaticFS("/", echo.MustSubFS(embed.WebuiFiles, "webui"))
+	webui := echo.MustSubFS(embed.WebuiFiles, "webui")
+
+	e.GET("/*", func(c *echo.Context) error {
+		path := strings.TrimPrefix(c.Request().URL.Path, "/")
+
+		if strings.HasPrefix(path, "api/") {
+			return echo.ErrNotFound
+		}
+
+		if path == "" {
+			return c.FileFS("index.html", webui)
+		}
+
+		if _, err := fs.Stat(webui, path); err == nil {
+			return c.FileFS(path, webui)
+		}
+
+		return c.FileFS("index.html", webui)
+	})
 }

@@ -45,6 +45,15 @@ func CustomErrorHandler(c *echo.Context, err error) {
 		return
 	}
 
+	code := echo.StatusCode(err)
+	if code != 0 {
+		_ = c.JSON(code, ErrorResponse{
+			Code:    "http_error",
+			Message: http.StatusText(code),
+		})
+		return
+	}
+
 	_ = c.JSON(http.StatusInternalServerError, ErrorResponse{
 		Code:    "internal_error",
 		Message: "internal server error",
