@@ -17,6 +17,7 @@ import (
 	"github.com/FortiBrine/VoidShift/internal/shared/http/router"
 	"github.com/FortiBrine/VoidShift/internal/shared/http/validator"
 	"github.com/FortiBrine/VoidShift/internal/user"
+	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/labstack/echo/v5"
 	"gorm.io/gorm"
 )
@@ -62,6 +63,14 @@ func main() {
 		return
 	}
 
+	wireGuardRepository := wireguard.NewGormRepository(db)
+	wireGuardService := wireguard.NewService(wireGuardRepository)
+
+	if err := wireGuardService.Load(); err != nil {
+		log.Printf("failed to load wireguard service: %v", err)
+		return
+	}
+
 	e := echo.New()
 
 	e.Validator = validator.NewCustomValidator()
@@ -69,7 +78,7 @@ func main() {
 
 	middleware.Register(e)
 
-	r := router.NewRouter(sessionService, userService)
+	r := router.NewRouter(sessionService, userService, wireGuardService)
 	r.Register(e)
 
 	startConfig := echo.StartConfig{

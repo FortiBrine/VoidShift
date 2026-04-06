@@ -9,25 +9,31 @@ import (
 	"github.com/FortiBrine/VoidShift/internal/session"
 	"github.com/FortiBrine/VoidShift/internal/shared/http/handlers"
 	"github.com/FortiBrine/VoidShift/internal/user"
+	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/labstack/echo/v5"
 )
 
 type Router struct {
-	sessionService *session.Service
-	userService    *user.Service
+	sessionService   *session.Service
+	userService      *user.Service
+	wireGuardService *wireguard.Service
 }
 
 func NewRouter(
 	sessionService *session.Service,
 	userService *user.Service,
+	wireGuardService *wireguard.Service,
 ) *Router {
 	return &Router{
-		sessionService: sessionService,
-		userService:    userService,
+		sessionService:   sessionService,
+		userService:      userService,
+		wireGuardService: wireGuardService,
 	}
 }
 
 func (r *Router) Register(e *echo.Echo) {
+	authMiddleware := auth.Middleware(r.sessionService, r.userService)
+
 	api := e.Group("/api")
 	api.GET("/health", handlers.Health)
 
@@ -35,8 +41,14 @@ func (r *Router) Register(e *echo.Echo) {
 	a.POST("/login", auth.NewLoginHandler(r.sessionService, r.userService).Login)
 
 	protected := api.Group("/protected")
-	protected.Use(auth.Middleware(r.sessionService, r.userService))
+	protected.Use(authMiddleware)
 	protected.GET("/test", handlers.TestHandler)
+
+	wgHandler := wireguard.NewHandler(r.wireGuardService)
+	wgGroup := api.Group("/vpn/wireguard")
+	wgGroup.Use(authMiddleware)
+	wgGroup.GET("/networks", wgHandler.GetNetwork)
+	wgGroup.POST("/networks/generate", wgHandler.GenerateNetwork)
 
 	webui := echo.MustSubFS(embed.WebuiFiles, "webui")
 

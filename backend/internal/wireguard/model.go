@@ -1,20 +1,33 @@
 package wireguard
 
-type WireguardInterface struct {
-	ID string `gorm:"primaryKey"`
+import "time"
 
-	Name       string
-	Address    string
-	ListenPort *int
+type Network struct {
+	ID uint `gorm:"primaryKey"`
 
-	PublicKey  string
-	PrivateKey string
+	Name       string `gorm:"not null"`
+	Address    string `gorm:"not null"`
+	ListenPort int    `gorm:"not null"`
+
+	PublicKey  string `gorm:"uniqueIndex;not null"`
+	PrivateKey string `gorm:"not null"`
+
+	Peers []Peer `gorm:"foreignKey:NetworkID;constraint:OnDelete:CASCADE;"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Peer struct {
-	ID string `gorm:"primaryKey"`
+	ID        uint `gorm:"primaryKey"`
+	NetworkID uint `gorm:"not null;index"`
 
-	PublicKey    string
+	PublicKey  string `gorm:"uniqueIndex;not null"`
+	PrivateKey string `gorm:"not null"`
+
 	PresharedKey string
-	AllowedIPs   []string `gorm:"type:json"`
+	AllowedIPs   []string `gorm:"serializer:json"`
+
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
