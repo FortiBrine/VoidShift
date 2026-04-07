@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/FortiBrine/VoidShift/internal/shared"
 	"github.com/labstack/echo/v5"
 )
 
@@ -62,4 +63,32 @@ func (h *Handler) GenerateNetwork(c *echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"network": network.ID,
 	})
+}
+
+func (h *Handler) RemoveNetwork(c *echo.Context) error {
+	ctx := c.Request().Context()
+	networkID, err := echo.PathParam[uint](c, "id")
+	if err != nil {
+		return shared.ErrNetworkNotFound
+	}
+
+	if err := h.service.RemoveNetwork(ctx, networkID); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *Handler) UpNetwork(c *echo.Context) error {
+	ctx := c.Request().Context()
+	networkID, err := echo.PathParam[uint](c, "id")
+	if err != nil {
+		return shared.ErrNetworkNotFound
+	}
+
+	if err := h.service.UpNetwork(ctx, networkID); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/labstack/echo/v5"
+	"golang.zx2c4.com/wireguard/wgctrl"
 	"gorm.io/gorm"
 )
 
@@ -63,11 +64,23 @@ func main() {
 		return
 	}
 
+	client, err := wgctrl.New()
+	if err != nil {
+		log.Printf("failed to initialize WireGuard client: %v", err)
+		return
+	}
+	defer func(client *wgctrl.Client) {
+		err := client.Close()
+		if err != nil {
+			log.Printf("failed to close WireGuard client: %v", err)
+		}
+	}(client)
+
 	wireGuardRepository := wireguard.NewGormRepository(db)
-	wireGuardService := wireguard.NewService(wireGuardRepository)
+	wireGuardService := wireguard.NewService(wireGuardRepository, client)
 
 	if err := wireGuardService.Load(); err != nil {
-		log.Printf("failed to load wireguard service: %v", err)
+		log.Printf("failed to load WireGuard service: %v", err)
 		return
 	}
 
