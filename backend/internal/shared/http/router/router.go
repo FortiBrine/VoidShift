@@ -13,42 +13,31 @@ import (
 	"github.com/labstack/echo/v5"
 )
 
-type Router struct {
-	sessionService   *session.Service
-	userService      *user.Service
-	wireGuardService *wireguard.Service
-}
-
-func NewRouter(
+func RegisterRoutes(
+	e *echo.Echo,
 	sessionService *session.Service,
 	userService *user.Service,
 	wireGuardService *wireguard.Service,
-) *Router {
-	return &Router{
-		sessionService:   sessionService,
-		userService:      userService,
-		wireGuardService: wireGuardService,
-	}
-}
-
-func (r *Router) Register(e *echo.Echo) {
-	authMiddleware := auth.Middleware(r.sessionService, r.userService)
+) {
+	authMiddleware := auth.Middleware(sessionService, userService)
 
 	api := e.Group("/api")
 	api.GET("/health", handlers.Health)
 
 	a := api.Group("/auth")
-	a.POST("/login", auth.NewLoginHandler(r.sessionService, r.userService).Login)
+	a.POST("/login", auth.NewLoginHandler(sessionService, userService).Login)
 
 	protected := api.Group("/protected")
 	protected.Use(authMiddleware)
 	protected.GET("/test", handlers.TestHandler)
 
-	wgHandler := wireguard.NewHandler(r.wireGuardService)
+	wgHandler := wireguard.NewHandler(wireGuardService)
 	wgGroup := api.Group("/vpn/wireguard")
 	wgGroup.Use(authMiddleware)
 	wgGroup.GET("/networks", wgHandler.GetNetwork)
 	wgGroup.POST("/networks/generate", wgHandler.GenerateNetwork)
+	wgGroup.POST("/networks/:id/up", wgHandler.UpNetwork)
+	wgGroup.DELETE("/networks/:id", wgHandler.RemoveNetwork)
 
 	webui := echo.MustSubFS(embed.WebuiFiles, "webui")
 

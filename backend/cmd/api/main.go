@@ -1,3 +1,5 @@
+//go:build linux
+
 package main
 
 import (
@@ -90,9 +92,7 @@ func main() {
 	e.HTTPErrorHandler = http.CustomErrorHandler
 
 	middleware.Register(e)
-
-	r := router.NewRouter(sessionService, userService, wireGuardService)
-	r.Register(e)
+	router.RegisterRoutes(e, sessionService, userService, wireGuardService)
 
 	startConfig := echo.StartConfig{
 		Address:         cfg.HttpAddress,
