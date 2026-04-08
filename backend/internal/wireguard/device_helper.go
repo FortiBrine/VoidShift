@@ -1,6 +1,11 @@
 package wireguard
 
-import "github.com/vishvananda/netlink"
+import (
+	"errors"
+	"syscall"
+
+	"github.com/vishvananda/netlink"
+)
 
 func CreateDevice(name string) error {
 	link := &netlink.Wireguard{
@@ -9,7 +14,16 @@ func CreateDevice(name string) error {
 		},
 	}
 
-	return netlink.LinkAdd(link)
+	err := netlink.LinkAdd(link)
+	if err != nil {
+		if errors.Is(err, syscall.EEXIST) {
+			return nil
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 func SetDeviceAddress(name string, address string) error {
@@ -24,6 +38,10 @@ func SetDeviceAddress(name string, address string) error {
 	}
 
 	if err := netlink.AddrAdd(link, addr); err != nil {
+		if errors.Is(err, syscall.EEXIST) {
+			return nil
+		}
+
 		return err
 	}
 
