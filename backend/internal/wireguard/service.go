@@ -65,14 +65,14 @@ func (s *Service) GeneratePeer(
 ) (*Peer, error) {
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate private key: %w", err)
 	}
 
 	publicKey := privateKey.PublicKey()
 	psk, err := wgtypes.GenerateKey()
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to generate preshared key: %w", err)
 	}
 
 	peer := &Peer{
@@ -190,6 +190,26 @@ func (s *Service) UpNetwork(
 		Peers:        peers,
 	}); err != nil {
 		return fmt.Errorf("failed to configure device: %w", err)
+	}
+
+	return nil
+}
+
+func (s *Service) DownNetwork(
+	ctx context.Context,
+	networkID uint,
+) error {
+	network, err := s.repository.GetNetwork(ctx, networkID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return shared.ErrNetworkNotFound
+		}
+
+		return fmt.Errorf("failed to get network: %w", err)
+	}
+
+	if err = RemoveDevice(network.Name); err != nil {
+		return fmt.Errorf("failed to remove device: %w", err)
 	}
 
 	return nil

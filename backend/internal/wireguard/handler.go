@@ -92,3 +92,35 @@ func (h *Handler) UpNetwork(c *echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
+
+func (h *Handler) DownNetwork(c *echo.Context) error {
+	ctx := c.Request().Context()
+	networkID, err := echo.PathParam[uint](c, "id")
+	if err != nil {
+		return shared.ErrNetworkNotFound
+	}
+
+	if err := h.service.DownNetwork(ctx, networkID); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
+}
+
+func (h *Handler) GeneratePeer(c *echo.Context) error {
+	ctx := c.Request().Context()
+	networkID, err := echo.PathParam[uint](c, "id")
+	if err != nil {
+		return shared.ErrNetworkNotFound
+	}
+
+	peer, err := h.service.GeneratePeer(ctx, networkID)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"id":         peer.ID,
+		"public_key": peer.PublicKey,
+	})
+}
