@@ -10,10 +10,11 @@ type Repository interface {
 	Migrate() error
 	AddNetwork(ctx context.Context, network *Network) error
 
-	GetNetwork(ctx context.Context, networkID uint) (Network, error)
-	GetNetworkWithPeers(ctx context.Context, networkID uint) (Network, error)
+	GetNetwork(ctx context.Context, networkID uint) (*Network, error)
+	GetNetworkWithPeers(ctx context.Context, networkID uint) (*Network, error)
 	GetNetworks(ctx context.Context) ([]Network, error)
 
+	GetPeer(ctx context.Context, peerID uint) (Peer, error)
 	AddPeer(ctx context.Context, peer *Peer) error
 	RemovePeer(ctx context.Context, peerID uint) (int, error)
 
@@ -37,21 +38,30 @@ func (r *GormRepository) AddNetwork(ctx context.Context, network *Network) error
 	return gorm.G[Network](r.db).Create(ctx, network)
 }
 
-func (r *GormRepository) GetNetwork(ctx context.Context, networkID uint) (Network, error) {
-	return gorm.G[Network](r.db).
+func (r *GormRepository) GetNetwork(ctx context.Context, networkID uint) (*Network, error) {
+	network, err := gorm.G[Network](r.db).
 		Where("networks.id = ?", networkID).
 		First(ctx)
+	return &network, err
 }
 
-func (r *GormRepository) GetNetworkWithPeers(ctx context.Context, networkID uint) (Network, error) {
-	return gorm.G[Network](r.db).
+func (r *GormRepository) GetNetworkWithPeers(ctx context.Context, networkID uint) (*Network, error) {
+	network, err := gorm.G[Network](r.db).
 		Preload("Peers", nil).
 		Where("networks.id = ?", networkID).
 		First(ctx)
+
+	return &network, err
 }
 
 func (r *GormRepository) GetNetworks(ctx context.Context) ([]Network, error) {
 	return gorm.G[Network](r.db).Find(ctx)
+}
+
+func (r *GormRepository) GetPeer(ctx context.Context, peerID uint) (Peer, error) {
+	return gorm.G[Peer](r.db).
+		Where("peers.id = ?", peerID).
+		First(ctx)
 }
 
 func (r *GormRepository) AddPeer(ctx context.Context, peer *Peer) error {

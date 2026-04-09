@@ -34,12 +34,14 @@ func RegisterRoutes(
 	wgHandler := wireguard.NewHandler(wireGuardService)
 	wgGroup := api.Group("/vpn/wireguard")
 	wgGroup.Use(authMiddleware)
-	wgGroup.GET("/networks", wgHandler.GetNetwork)
+	wgGroup.GET("/networks", wgHandler.GetNetworks)
 	wgGroup.POST("/networks/generate", wgHandler.GenerateNetwork)
 	wgGroup.POST("/networks/:id/up", wgHandler.UpNetwork)
 	wgGroup.POST("/networks/:id/down", wgHandler.DownNetwork)
+	wgGroup.GET("/networks/:id", wgHandler.GetNetwork)
 	wgGroup.DELETE("/networks/:id", wgHandler.RemoveNetwork)
 	wgGroup.POST("/networks/:id/peers/generate", wgHandler.GeneratePeer)
+	wgGroup.DELETE("/peers/:peerId", wgHandler.RemovePeer)
 
 	webui := echo.MustSubFS(embed.WebuiFiles, "webui")
 

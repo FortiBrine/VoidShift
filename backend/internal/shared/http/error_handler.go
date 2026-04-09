@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/FortiBrine/VoidShift/internal/shared"
 	"github.com/FortiBrine/VoidShift/internal/shared/http/validator"
 	"github.com/labstack/echo/v5"
 )
@@ -40,6 +41,18 @@ func CustomErrorHandler(c *echo.Context, err error) {
 
 		_ = c.JSON(httpErr.Code, ErrorResponse{
 			Code:    "http_error",
+			Message: msg,
+		})
+		return
+	}
+
+	if appErr, ok := errors.AsType[*shared.AppError](err); ok {
+		statusCode := appErr.StatusCode
+		code := appErr.Code
+		msg := appErr.Message
+
+		_ = c.JSON(statusCode, ErrorResponse{
+			Code:    code,
 			Message: msg,
 		})
 		return

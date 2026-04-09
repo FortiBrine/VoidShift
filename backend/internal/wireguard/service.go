@@ -91,7 +91,56 @@ func (s *Service) RemovePeer(
 	ctx context.Context,
 	peerID uint,
 ) error {
-	_, err := s.repository.RemovePeer(ctx, peerID)
+	peer, err := s.repository.GetPeer(ctx, peerID)
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return shared.ErrPeerNotFound
+		}
+
+		return err
+	}
+
+	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return shared.ErrPeerNotFound
+		}
+
+		return err
+	}
+
+	up, err := IsDeviceUp(network.Name)
+	if err != nil {
+		return fmt.Errorf("failed to check device state: %w", err)
+	}
+
+	if !up {
+		_, err = s.repository.RemovePeer(ctx, peerID)
+
+		return err
+	}
+
+	publicKey, err := wgtypes.ParseKey(peer.PublicKey)
+	if err != nil {
+		return fmt.Errorf("failed to parse peer public key: %w", err)
+	}
+
+	err = s.client.ConfigureDevice(network.Name, wgtypes.Config{
+		Peers: []wgtypes.PeerConfig{
+			{
+				PublicKey: publicKey,
+				Remove:    true,
+			},
+		},
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to remove peer from device: %w", err)
+	}
+
+	_, err = s.repository.RemovePeer(ctx, peerID)
+
 	return err
 }
 
@@ -119,8 +168,24 @@ func (s *Service) RemoveNetwork(
 func (s *Service) GetNetwork(
 	ctx context.Context,
 	networkID uint,
-) (Network, error) {
+) (*Network, error) {
 	return s.repository.GetNetwork(ctx, networkID)
+}
+
+func (s *Service) GetNetworkWithPeers(
+	ctx context.Context,
+	networkID uint,
+) (*Network, error) {
+	network, err := s.repository.GetNetworkWithPeers(ctx, networkID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, shared.ErrNetworkNotFound
+		}
+
+		return nil, err
+	}
+
+	return network, err
 }
 
 func (s *Service) UpNetwork(

@@ -2,6 +2,7 @@ package wireguard
 
 import (
 	"errors"
+	"net"
 	"syscall"
 
 	"github.com/vishvananda/netlink"
@@ -46,6 +47,28 @@ func SetDeviceAddress(name string, address string) error {
 	}
 
 	return netlink.LinkSetUp(link)
+}
+
+func IsDeviceUp(name string) (bool, error) {
+	link, err := netlink.LinkByName(name)
+	if err != nil {
+		if _, ok := errors.AsType[netlink.LinkNotFoundError](err); ok {
+			return false, nil
+		}
+		return false, err
+	}
+
+	attrs := link.Attrs()
+
+	if attrs.OperState == netlink.OperUp {
+		return true, nil
+	}
+
+	if attrs.Flags&net.FlagUp != 0 {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func RemoveDevice(name string) error {

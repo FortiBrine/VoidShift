@@ -22,7 +22,7 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-func (h *Handler) GetNetwork(c *echo.Context) error {
+func (h *Handler) GetNetworks(c *echo.Context) error {
 	ctx := c.Request().Context()
 
 	networks, err := h.service.GetNetworks(ctx)
@@ -30,17 +30,18 @@ func (h *Handler) GetNetwork(c *echo.Context) error {
 		return fmt.Errorf("failed to get networks: %w", err)
 	}
 
-	result := make(map[uint]interface{})
-	for _, network := range networks {
-		result[network.ID] = map[string]interface{}{
-			"Name":       network.Name,
-			"Address":    network.Address,
-			"ListenPort": network.ListenPort,
+	networksResult := make([]map[string]any, len(networks))
+	for i, network := range networks {
+		networksResult[i] = map[string]any{
+			"id":          network.ID,
+			"name":        network.Name,
+			"address":     network.Address,
+			"listen_port": network.ListenPort,
 		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"networks": result,
+		"networks": networksResult,
 	})
 }
 
@@ -61,8 +62,43 @@ func (h *Handler) GenerateNetwork(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"network": network.ID,
+		"id":          network.ID,
+		"public_key":  network.PublicKey,
+		"address":     network.Address,
+		"listen_port": network.ListenPort,
 	})
+}
+
+func (h *Handler) GetNetwork(c *echo.Context) error {
+	ctx := c.Request().Context()
+	networkID, err := echo.PathParam[uint](c, "id")
+	if err != nil {
+		return shared.ErrNetworkNotFound
+	}
+
+	network, err := h.service.GetNetworkWithPeers(ctx, networkID)
+	if err != nil {
+		return err
+	}
+
+	peers := make([]map[string]any, len(network.Peers))
+	for i, peer := range network.Peers {
+		peers[i] = map[string]any{
+			"id":          peer.ID,
+			"public_key":  peer.PublicKey,
+			"allowed_ips": peer.AllowedIPs,
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]any{
+		"id":          network.ID,
+		"public_key":  network.PublicKey,
+		"address":     network.Address,
+		"listen_port": network.ListenPort,
+
+		"peers": peers,
+	})
+
 }
 
 func (h *Handler) RemoveNetwork(c *echo.Context) error {
@@ -123,4 +159,18 @@ func (h *Handler) GeneratePeer(c *echo.Context) error {
 		"id":         peer.ID,
 		"public_key": peer.PublicKey,
 	})
+}
+
+func (h *Handler) RemovePeer(c *echo.Context) error {
+	ctx := c.Request().Context()
+	peerID, err := echo.PathParam[uint](c, "peerId")
+	if err != nil {
+		return shared.ErrPeerNotFound
+	}
+
+	if err := h.service.RemovePeer(ctx, peerID); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusNoContent)
 }
