@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/FortiBrine/VoidShift/internal/session"
@@ -66,7 +65,7 @@ func (h *LoginHandler) Login(c *echo.Context) error {
 	)
 
 	if err != nil {
-		fmt.Printf("error creating session: %v\n", err)
+		c.Echo().Logger.Error("error creating session", "error", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 	}
 
@@ -82,7 +81,7 @@ func (h *LoginHandler) Logout(c *echo.Context) error {
 		err := h.sessionService.LogoutSession(ctx, cookie.Value)
 
 		if err != nil {
-			fmt.Printf("error logout: %v\n", err)
+			c.Echo().Logger.Error("error logout", "error", err)
 			return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
 		}
 	}

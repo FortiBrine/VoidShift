@@ -1,42 +1,25 @@
 package config
 
 import (
-	"log"
-	"os"
-	"strconv"
 	"time"
 
+	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	SqliteDatabasePath string
-	MysqlDsn           string
+	Environment        string `env:"ENVIRONMENT"`
+	SqliteDatabasePath string `env:"SQLITE_DATABASE_PATH"`
+	MysqlDsn           string `env:"MYSQL_DSN"`
 
-	GracefulTimeout time.Duration
-	HttpAddress     string
-	AdminUsername   string
-	AdminPassword   string
+	GracefulTimeout time.Duration `env:"GRACEFUL_TIMEOUT" envDefault:"5s"`
+	HttpAddress     string        `env:"HTTP_ADDRESS"`
+	AdminUsername   string        `env:"ADMIN_USERNAME"`
+	AdminPassword   string        `env:"ADMIN_PASSWORD"`
 }
 
-func Load() Config {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("failed to load .env file: %v", err)
-	}
+func Load() (Config, error) {
+	_ = godotenv.Load()
 
-	gracefulTimeout, err := strconv.Atoi(os.Getenv("GRACEFUL_TIMEOUT"))
-	if err != nil {
-		gracefulTimeout = 5
-	}
-
-	return Config{
-		SqliteDatabasePath: os.Getenv("SQLITE_DATABASE_PATH"),
-		MysqlDsn:           os.Getenv("MYSQL_DSN"),
-
-		GracefulTimeout: time.Duration(gracefulTimeout) * time.Second,
-		HttpAddress:     os.Getenv("HTTP_ADDRESS"),
-		AdminUsername:   os.Getenv("ADMIN_USERNAME"),
-		AdminPassword:   os.Getenv("ADMIN_PASSWORD"),
-	}
-
+	return env.ParseAs[Config]()
 }

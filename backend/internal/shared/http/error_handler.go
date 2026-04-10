@@ -2,7 +2,6 @@ package http
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/FortiBrine/VoidShift/internal/shared"
@@ -31,7 +30,7 @@ func CustomErrorHandler(c *echo.Context, err error) {
 		})
 
 		if err != nil {
-			fmt.Printf("failed to send validation error response: %v\n", err)
+			c.Echo().Logger.Error("failed to send validation error response", "error", err)
 		}
 		return
 	}

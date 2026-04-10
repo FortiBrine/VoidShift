@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/FortiBrine/VoidShift/internal/session"
@@ -29,7 +28,7 @@ func Middleware(
 					return echo.NewHTTPError(http.StatusUnauthorized, "invalid session")
 				}
 
-				fmt.Printf("failed to validate session: %v\n", err)
+				c.Echo().Logger.Error("failed to validate session", "error", err)
 				return echo.NewHTTPError(http.StatusInternalServerError, "failed to validate session")
 			}
 
