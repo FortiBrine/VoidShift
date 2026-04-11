@@ -1,15 +1,13 @@
 package auth
 
 import (
-	"errors"
 	"net/http"
+	"time"
 
-	"github.com/FortiBrine/VoidShift/internal/session"
-	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/labstack/echo/v5"
-	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
+
+const SessionCookieName = "voidshift.session"
 
 type LoginRequestDto struct {
 	Username string `json:"username" validate:"required,min=4,max=30"`
@@ -17,17 +15,14 @@ type LoginRequestDto struct {
 }
 
 type LoginHandler struct {
-	sessionService *session.Service
-	userService    *user.Service
+	authService *Service
 }
 
 func NewLoginHandler(
-	sessionService *session.Service,
-	userService *user.Service,
+	authService *Service,
 ) *LoginHandler {
 	return &LoginHandler{
-		sessionService: sessionService,
-		userService:    userService,
+		authService: authService,
 	}
 }
 
@@ -41,51 +36,50 @@ func (h *LoginHandler) Login(c *echo.Context) error {
 		return err
 	}
 
-	ctx := c.Request().Context()
-
-	u, err := h.userService.GetByUsername(ctx, req.Username)
-
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
-		}
-
-		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(req.Password))
-
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "invalid credentials")
-	}
-
-	sessionID, expiresAt, err := h.sessionService.CreateUserSession(
-		ctx,
-		u.ID, c.Request().UserAgent(), c.RealIP(),
+	result, err := h.authService.Login(
+		c.Request().Context(),
+		req.Username,
+		req.Password,
+		c.Request().UserAgent(),
+		c.RealIP(),
 	)
 
 	if err != nil {
-		c.Echo().Logger.Error("error creating session", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+		return err
 	}
 
-	c.SetCookie(BuildSessionCookie(sessionID, expiresAt))
+	c.SetCookie(&http.Cookie{
+		Name:     SessionCookieName,
+		Value:    result.SessionID,
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  result.ExpiresAt,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   int(time.Until(result.ExpiresAt).Seconds()),
+	})
 
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *LoginHandler) Logout(c *echo.Context) error {
-	ctx := c.Request().Context()
 	cookie, err := c.Cookie(SessionCookieName)
-	if err == nil {
-		err := h.sessionService.LogoutSession(ctx, cookie.Value)
-
-		if err != nil {
-			c.Echo().Logger.Error("error logout", "error", err)
-			return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
-		}
+	if err != nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "session not found")
 	}
 
-	c.SetCookie(BuildExpiredSessionCookie())
+	if err := h.authService.LogoutSession(c.Request().Context(), cookie.Value); err != nil {
+		return err
+	}
+
+	c.SetCookie(&http.Cookie{
+		Name:     SessionCookieName,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Expires:  time.Unix(0, 0),
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1,
+	})
+
 	return c.NoContent(http.StatusNoContent)
 }

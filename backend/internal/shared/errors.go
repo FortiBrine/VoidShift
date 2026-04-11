@@ -15,6 +15,7 @@ func (e AppError) Error() string {
 }
 
 var (
-	ErrNetworkNotFound = &AppError{http.StatusNotFound, "network_not_found", "network not found"}
-	ErrPeerNotFound    = &AppError{http.StatusNotFound, "peer_not_found", "peer not found"}
+	ErrNetworkNotFound    = &AppError{http.StatusNotFound, "network_not_found", "network not found"}
+	ErrPeerNotFound       = &AppError{http.StatusNotFound, "peer_not_found", "peer not found"}
+	ErrInvalidCredentials = &AppError{http.StatusUnauthorized, "invalid_credentials", "invalid credentials"}
 )
