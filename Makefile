@@ -24,7 +24,7 @@ backend: frontend
 	rm -rf $(EMBED_DIR)
 	mkdir -p $(EMBED_DIR)
 	cp -R $(FRONTEND_OUT)/. $(EMBED_DIR)/
-	cd $(BACKEND_DIR) && CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o ../$(APP_OUT) ./cmd/api
+	cd $(BACKEND_DIR) && CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-w -s" -o ../$(APP_OUT) ./cmd/api
 
 clean:
 	rm -rf $(FRONTEND_DIR)/.output

@@ -17,7 +17,7 @@ COPY backend/ ./
 
 COPY --from=frontend /app/frontend/.output/public ./internal/embed/webui
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /app/app ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-w -s" -o /app/app ./cmd/api
 
 FROM alpine:3.21
 
