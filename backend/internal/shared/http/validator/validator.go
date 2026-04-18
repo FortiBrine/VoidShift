@@ -77,6 +77,8 @@ func validationMessage(fe validator.FieldError) string {
 		return "must be greater than or equal to " + fe.Param()
 	case "lte":
 		return "must be less than or equal to " + fe.Param()
+	case "alphanum":
+		return "must be alphanumeric"
 	default:
 		return "is invalid"
 	}

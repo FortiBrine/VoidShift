@@ -10,7 +10,7 @@ import (
 const SessionCookieName = "voidshift.session"
 
 type LoginRequestDto struct {
-	Username string `json:"username" validate:"required,min=4,max=30"`
+	Username string `json:"username" validate:"required,min=4,max=30,alphanum"`
 	Password string `json:"password" validate:"required,min=8,max=40"`
 }
 

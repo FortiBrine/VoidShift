@@ -18,6 +18,13 @@ type Service struct {
 	userService    *user.Service
 }
 
+func NewService(sessionService *session.Service, userService *user.Service) *Service {
+	return &Service{
+		sessionService: sessionService,
+		userService:    userService,
+	}
+}
+
 type LoginResult struct {
 	SessionID string
 	ExpiresAt time.Time

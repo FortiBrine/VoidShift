@@ -17,7 +17,7 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Printf("Error loading config: %v", err)
+		log.Printf("error loading config: %v", err)
 		return
 	}
 

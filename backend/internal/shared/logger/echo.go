@@ -5,15 +5,37 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
-func RequestLogger(base *slog.Logger) echo.MiddlewareFunc {
+type RequestLoggerConfig struct {
+	Logger  *slog.Logger
+	Skipper middleware.Skipper
+}
+
+var DefaultRequestLoggerConfig = RequestLoggerConfig{
+	Logger:  slog.Default(),
+	Skipper: middleware.DefaultSkipper,
+}
+
+func RequestLogger(config RequestLoggerConfig) echo.MiddlewareFunc {
+	if config.Logger == nil {
+		config.Logger = DefaultRequestLoggerConfig.Logger
+	}
+	if config.Skipper == nil {
+		config.Skipper = DefaultRequestLoggerConfig.Skipper
+	}
+
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
+			if config.Skipper(c) {
+				return next(c)
+			}
+
 			start := time.Now()
 
 			reqID := c.Response().Header().Get(echo.HeaderXRequestID)
-			reqLogger := base.With(
+			reqLogger := config.Logger.With(
 				slog.String("request_id", reqID),
 			)
 

@@ -9,7 +9,17 @@ import (
 func Register(
 	e *echo.Echo,
 ) {
-	e.Use(logger.RequestLogger(e.Logger))
+	e.Use(logger.RequestLogger(logger.RequestLoggerConfig{
+		Logger: e.Logger,
+		Skipper: func(c *echo.Context) bool {
+			switch c.Request().URL.Path {
+			case "/health":
+				return true
+			default:
+				return false
+			}
+		},
+	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.Secure())
 }

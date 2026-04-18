@@ -15,8 +15,9 @@ import (
 
 func RegisterRoutes(
 	e *echo.Echo,
-	sessionService *session.Service,
 	userService *user.Service,
+	sessionService *session.Service,
+	authService *auth.Service,
 	wireGuardService *wireguard.Service,
 ) {
 	authMiddleware := auth.Middleware(sessionService, userService)
@@ -25,11 +26,9 @@ func RegisterRoutes(
 	api.GET("/health", handlers.Health)
 
 	a := api.Group("/auth")
-	a.POST("/login", auth.NewLoginHandler(sessionService, userService).Login)
-
-	protected := api.Group("/protected")
-	protected.Use(authMiddleware)
-	protected.GET("/test", handlers.TestHandler)
+	loginHandler := auth.NewLoginHandler(authService)
+	a.POST("/login", loginHandler.Login)
+	a.POST("/logout", loginHandler.Logout)
 
 	wgHandler := wireguard.NewHandler(wireGuardService)
 	wgGroup := api.Group("/vpn/wireguard")

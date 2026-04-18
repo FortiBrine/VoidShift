@@ -2,10 +2,9 @@ package app
 
 import (
 	"context"
-	"errors"
-	"log/slog"
 	"time"
 
+	"github.com/FortiBrine/VoidShift/internal/auth"
 	"github.com/FortiBrine/VoidShift/internal/session"
 	"github.com/FortiBrine/VoidShift/internal/shared/config"
 	"github.com/FortiBrine/VoidShift/internal/shared/database"
@@ -26,6 +25,7 @@ type App struct {
 	DB               *gorm.DB
 	SessionService   *session.Service
 	UserService      *user.Service
+	AuthService      *auth.Service
 	WireGuardService *wireguard.Service
 	WireGuardClient  *wgctrl.Client
 }
@@ -33,7 +33,7 @@ type App struct {
 func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 	l := logger.New(cfg.Environment)
 
-	db, err := initDatabase(cfg, l)
+	db, err := database.Open(cfg, l)
 	if err != nil {
 		return nil, err
 	}
@@ -49,6 +49,8 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 	if err := userService.Load(ctx, cfg); err != nil {
 		return nil, err
 	}
+
+	authService := auth.NewService(sessionService, userService)
 
 	client, err := wgctrl.New()
 	if err != nil {
@@ -67,26 +69,17 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 	e.Validator = validator.NewCustomValidator()
 	e.HTTPErrorHandler = http.CustomErrorHandler
 	middleware.Register(e)
-	router.RegisterRoutes(e, sessionService, userService, wireGuardService)
+	router.RegisterRoutes(e, userService, sessionService, authService, wireGuardService)
 
 	return &App{
 		Echo:             e,
 		DB:               db,
 		SessionService:   sessionService,
 		UserService:      userService,
+		AuthService:      authService,
 		WireGuardService: wireGuardService,
 		WireGuardClient:  client,
 	}, nil
-}
-
-func initDatabase(cfg config.Config, l *slog.Logger) (*gorm.DB, error) {
-	if cfg.SqliteDatabasePath != "" {
-		return database.NewSqliteDatabase(cfg, l)
-	}
-	if cfg.MysqlDsn != "" {
-		return database.NewMysqlDatabase(cfg, l)
-	}
-	return nil, errors.New("no database configured")
 }
 
 func (a *App) Close() error {
