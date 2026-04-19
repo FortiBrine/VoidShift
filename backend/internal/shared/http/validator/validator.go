@@ -79,6 +79,10 @@ func validationMessage(fe validator.FieldError) string {
 		return "must be less than or equal to " + fe.Param()
 	case "alphanum":
 		return "must be alphanumeric"
+	case "cidr":
+		return "must be a valid CIDR"
+	case "ipv4":
+		return "must be a valid IPv4 address"
 	default:
 		return "is invalid"
 	}

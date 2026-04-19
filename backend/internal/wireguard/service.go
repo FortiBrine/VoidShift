@@ -67,6 +67,7 @@ func (s *Service) GenerateNetwork(
 func (s *Service) GeneratePeer(
 	ctx context.Context,
 	networkID uint,
+	allowedIPs []string,
 ) (*Peer, error) {
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
@@ -87,6 +88,7 @@ func (s *Service) GeneratePeer(
 		PrivateKey: privateKey.String(),
 
 		PresharedKey: psk.String(),
+		AllowedIPs:   allowedIPs,
 	}
 
 	return peer, s.repository.AddPeer(ctx, peer)
@@ -171,12 +173,26 @@ func (s *Service) GetPeerConfig(
 		return "", err
 	}
 
+	_, mask, found := strings.Cut(network.Address, "/")
+	if !found {
+		return "", shared.ErrNetworkNotFound
+	}
+
 	config := strings.Builder{}
 	config.WriteString("[Interface]\n")
 	config.WriteString(fmt.Sprintf("PrivateKey = %s\n", peer.PrivateKey))
 	config.WriteString(fmt.Sprintf("DNS = %s\n", "1.1.1.1"))
 
-	addresses := strings.Join(peer.AllowedIPs, ", ")
+	var processed []string
+
+	for _, ip := range peer.AllowedIPs {
+		if !strings.Contains(ip, "/") {
+			ip = ip + "/" + mask
+		}
+		processed = append(processed, ip)
+	}
+
+	addresses := strings.Join(processed, ", ")
 	if addresses != "" {
 		config.WriteString(fmt.Sprintf("Address = %s\n", addresses))
 	}
@@ -301,7 +317,7 @@ func (s *Service) UpNetwork(
 		allowedIPs := make([]net.IPNet, len(peer.AllowedIPs))
 
 		for j, allowedIP := range peer.AllowedIPs {
-			_, ipNet, err := net.ParseCIDR(allowedIP)
+			_, ipNet, err := net.ParseCIDR(allowedIP + "/32")
 			if err != nil {
 				return fmt.Errorf("failed to parse allowed IP %q: %w", allowedIP, err)
 			}

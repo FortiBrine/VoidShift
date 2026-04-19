@@ -18,6 +18,10 @@ type GenerateNetworkRequest struct {
 	ListenPort int    `json:"listen_port" validate:"required,min=1024,max=65535"`
 }
 
+type GeneratePeerRequest struct {
+	AllowedIPs []string `json:"allowed_ips" validate:"required,dive,ipv4"`
+}
+
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
@@ -145,12 +149,21 @@ func (h *Handler) DownNetwork(c *echo.Context) error {
 
 func (h *Handler) GeneratePeer(c *echo.Context) error {
 	ctx := c.Request().Context()
+	var request GeneratePeerRequest
+	if err := c.Bind(&request); err != nil {
+		return err
+	}
+
+	if err := c.Validate(request); err != nil {
+		return err
+	}
+
 	networkID, err := echo.PathParam[uint](c, "id")
 	if err != nil {
 		return shared.ErrNetworkNotFound
 	}
 
-	peer, err := h.service.GeneratePeer(ctx, networkID)
+	peer, err := h.service.GeneratePeer(ctx, networkID, request.AllowedIPs)
 	if err != nil {
 		return err
 	}
