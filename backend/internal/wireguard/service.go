@@ -5,22 +5,27 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 
 	"github.com/FortiBrine/VoidShift/internal/shared"
+	"github.com/skip2/go-qrcode"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"gorm.io/gorm"
 )
 
 type Service struct {
-	repository Repository
-	client     *wgctrl.Client
+	repository  Repository
+	client      *wgctrl.Client
+	hostAddress string
 }
 
-func NewService(repository Repository, client *wgctrl.Client) *Service {
+func NewService(repository Repository, client *wgctrl.Client, hostAddress string) *Service {
 	return &Service{
-		repository: repository,
-		client:     client,
+		repository:  repository,
+		client:      client,
+		hostAddress: hostAddress,
 	}
 }
 
@@ -142,6 +147,69 @@ func (s *Service) RemovePeer(
 	_, err = s.repository.RemovePeer(ctx, peerID)
 
 	return err
+}
+
+func (s *Service) GetPeerConfig(
+	ctx context.Context,
+	peerID uint,
+) (string, error) {
+	peer, err := s.repository.GetPeer(ctx, peerID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", shared.ErrPeerNotFound
+		}
+
+		return "", err
+	}
+
+	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", shared.ErrNetworkNotFound
+		}
+
+		return "", err
+	}
+
+	config := strings.Builder{}
+	config.WriteString("[Interface]\n")
+	config.WriteString(fmt.Sprintf("PrivateKey = %s\n", peer.PrivateKey))
+	config.WriteString(fmt.Sprintf("DNS = %s\n", "1.1.1.1"))
+
+	addresses := strings.Join(peer.AllowedIPs, ", ")
+	if addresses != "" {
+		config.WriteString(fmt.Sprintf("Address = %s\n", addresses))
+	}
+
+	config.WriteString("\n[Peer]\n")
+	config.WriteString(fmt.Sprintf("PublicKey = %s\n", network.PublicKey))
+
+	if peer.PresharedKey != "" {
+		config.WriteString(fmt.Sprintf("PresharedKey = %s\n", peer.PresharedKey))
+	}
+
+	endpoint := net.JoinHostPort(s.hostAddress, strconv.Itoa(network.ListenPort))
+	config.WriteString(fmt.Sprintf("Endpoint = %s\n", endpoint))
+	config.WriteString(fmt.Sprintf("AllowedIPs = %s, %s\n", "0.0.0.0/0", "::/0"))
+
+	return config.String(), nil
+}
+
+func (s *Service) GetPeerConfigQR(
+	ctx context.Context,
+	peerID uint,
+) ([]byte, error) {
+	config, err := s.GetPeerConfig(ctx, peerID)
+	if err != nil {
+		return nil, err
+	}
+
+	qrCode, err := qrcode.Encode(config, qrcode.Medium, 512)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate qr code: %w", err)
+	}
+
+	return qrCode, nil
 }
 
 func (s *Service) RemoveNetwork(

@@ -40,6 +40,9 @@ func RegisterRoutes(
 	wgGroup.GET("/networks/:id", wgHandler.GetNetwork)
 	wgGroup.DELETE("/networks/:id", wgHandler.RemoveNetwork)
 	wgGroup.POST("/networks/:id/peers/generate", wgHandler.GeneratePeer)
+	wgGroup.GET("/peers/:peerId/config", wgHandler.GetPeerConfig)
+	wgGroup.GET("/peers/:peerId/config/download", wgHandler.DownloadPeerConfig)
+	wgGroup.GET("/peers/:peerId/qr", wgHandler.GetPeerConfigQR)
 	wgGroup.DELETE("/peers/:peerId", wgHandler.RemovePeer)
 
 	webui := echo.MustSubFS(embed.WebuiFiles, "webui")

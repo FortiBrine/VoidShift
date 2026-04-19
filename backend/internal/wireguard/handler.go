@@ -174,3 +174,49 @@ func (h *Handler) RemovePeer(c *echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
+
+func (h *Handler) GetPeerConfig(c *echo.Context) error {
+	ctx := c.Request().Context()
+	peerID, err := echo.PathParam[uint](c, "peerId")
+	if err != nil {
+		return shared.ErrPeerNotFound
+	}
+
+	config, err := h.service.GetPeerConfig(ctx, peerID)
+	if err != nil {
+		return err
+	}
+
+	return c.String(http.StatusOK, config)
+}
+
+func (h *Handler) DownloadPeerConfig(c *echo.Context) error {
+	ctx := c.Request().Context()
+	peerID, err := echo.PathParam[uint](c, "peerId")
+	if err != nil {
+		return shared.ErrPeerNotFound
+	}
+
+	config, err := h.service.GetPeerConfig(ctx, peerID)
+	if err != nil {
+		return err
+	}
+
+	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"peer-%d.conf\"", peerID))
+	return c.String(http.StatusOK, config)
+}
+
+func (h *Handler) GetPeerConfigQR(c *echo.Context) error {
+	ctx := c.Request().Context()
+	peerID, err := echo.PathParam[uint](c, "peerId")
+	if err != nil {
+		return shared.ErrPeerNotFound
+	}
+
+	qrCode, err := h.service.GetPeerConfigQR(ctx, peerID)
+	if err != nil {
+		return err
+	}
+
+	return c.Blob(http.StatusOK, "image/png", qrCode)
+}

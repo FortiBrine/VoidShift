@@ -12,8 +12,9 @@ type Config struct {
 	SqliteDatabasePath string `env:"SQLITE_DATABASE_PATH"`
 	MysqlDsn           string `env:"MYSQL_DSN"`
 
+	HostAddress     string        `env:"HOST_ADDRESS"`
 	GracefulTimeout time.Duration `env:"GRACEFUL_TIMEOUT" envDefault:"5s"`
-	HttpAddress     string        `env:"HTTP_ADDRESS"`
+	HttpAddress     string        `env:"HTTP_ADDRESS" envDefault:":8080"`
 	AdminUsername   string        `env:"ADMIN_USERNAME"`
 	AdminPassword   string        `env:"ADMIN_PASSWORD"`
 }

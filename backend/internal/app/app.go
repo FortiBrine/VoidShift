@@ -58,7 +58,7 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 	}
 
 	wireGuardRepository := wireguard.NewGormRepository(db)
-	wireGuardService := wireguard.NewService(wireGuardRepository, client)
+	wireGuardService := wireguard.NewService(wireGuardRepository, client, cfg.HostAddress)
 	if err := wireGuardService.Load(); err != nil {
 		_ = client.Close()
 		return nil, err
