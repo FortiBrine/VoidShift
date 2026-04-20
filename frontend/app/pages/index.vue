@@ -1,11 +1,9 @@
-<script setup lang="ts">
-
-</script>
-
 <template>
-  <p>123</p>
+  <v-container class="py-12 text-center">
+    <v-progress-circular indeterminate color="primary" />
+  </v-container>
 </template>
 
-<style scoped>
-
-</style>
+<script setup lang="ts">
+await navigateTo('/wireguard')
+</script>
