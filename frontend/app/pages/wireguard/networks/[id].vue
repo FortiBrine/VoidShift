@@ -43,7 +43,14 @@
   <v-card rounded="xl" elevation="1">
     <v-card-title class="d-flex align-center justify-space-between py-4 px-6">
       <span class="text-h6">Peer-и</span>
-      <v-btn color="primary" prepend-icon="mdi-plus" @click="addPeerDialog = true">Додати peer</v-btn>
+      <v-btn
+        v-if="network"
+        color="primary"
+        prepend-icon="mdi-plus"
+        @click="goToCreatePeer"
+      >
+        Додати peer
+      </v-btn>
     </v-card-title>
 
     <v-divider />
@@ -52,9 +59,24 @@
       <v-list-item v-for="peer in network.peers" :key="peer.id" :title="`Peer #${peer.id}`" :subtitle="peer.public_key">
         <template #append>
           <div class="d-flex ga-2">
-            <v-btn size="small" variant="outlined" @click="showConfig(peer.id)">Конфіг</v-btn>
+            <v-btn
+              v-if="network"
+              size="small"
+              variant="outlined"
+              @click="goToPeerConfig(peer.id)"
+            >
+              Конфіг
+            </v-btn>
             <v-btn size="small" variant="outlined" @click="downloadConfig(peer.id)">Завантажити</v-btn>
-            <v-btn size="small" color="primary" variant="tonal" @click="showQr(peer.id)">QR</v-btn>
+            <v-btn
+              v-if="network"
+              size="small"
+              color="primary"
+              variant="tonal"
+              @click="goToPeerQr(peer.id)"
+            >
+              QR
+            </v-btn>
           </div>
         </template>
 
@@ -79,64 +101,6 @@
       <v-progress-circular indeterminate color="primary" />
     </v-card-text>
   </v-card>
-
-  <v-dialog v-model="addPeerDialog" max-width="520">
-    <v-card rounded="xl">
-      <v-card-title class="pt-6 px-6">Додати peer</v-card-title>
-      <v-card-text class="px-6 pb-2">
-        <v-text-field
-          v-model="peerIp"
-          label="IP peer-а"
-          variant="outlined"
-          hint="Наприклад: 10.8.0.2"
-          persistent-hint
-        />
-      </v-card-text>
-      <v-card-actions class="px-6 pb-6">
-        <v-spacer />
-        <v-btn variant="text" @click="addPeerDialog = false">Скасувати</v-btn>
-        <v-btn color="primary" :loading="peerLoading" @click="submitPeer">Додати</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-  <v-dialog v-model="configDialog" max-width="760">
-    <v-card rounded="xl">
-      <v-card-title class="pt-6 px-6">Конфіг peer-а</v-card-title>
-      <v-card-text class="px-6 pb-2">
-        <v-textarea
-          :model-value="peerConfig"
-          variant="outlined"
-          auto-grow
-          rows="10"
-          readonly
-        />
-      </v-card-text>
-      <v-card-actions class="px-6 pb-6">
-        <v-spacer />
-        <v-btn color="primary" @click="configDialog = false">Закрити</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
-  <v-dialog v-model="qrDialog" max-width="560">
-    <v-card rounded="xl">
-      <v-card-title class="pt-6 px-6">QR код peer-а</v-card-title>
-      <v-card-text class="px-6 pb-2 text-center">
-        <v-img
-          v-if="qrImageUrl"
-          :src="qrImageUrl"
-          max-width="420"
-          class="mx-auto"
-          cover
-        />
-      </v-card-text>
-      <v-card-actions class="px-6 pb-6">
-        <v-spacer />
-        <v-btn color="primary" @click="closeQr">Закрити</v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 
 <script setup lang="ts">
@@ -151,21 +115,10 @@ const notification = useNotification()
 const loading = ref(true)
 const upLoading = ref(false)
 const downLoading = ref(false)
-const peerLoading = ref(false)
-
-const addPeerDialog = ref(false)
-const configDialog = ref(false)
-const qrDialog = ref(false)
-
-const peerIp = ref('')
-const peerConfig = ref('')
-const qrImageUrl = ref<string | null>(null)
 
 const network = ref<NetworkDetails | null>(null)
 
 const networkId = computed(() => Number(route.params.id))
-
-const ipv4Pattern = /^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-5][0-9])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-5][0-9])$/
 
 const loadNetwork = async () => {
   if (!Number.isInteger(networkId.value) || networkId.value <= 0) {
@@ -219,71 +172,39 @@ const bringDown = async () => {
   }
 }
 
-const submitPeer = async () => {
-  if (peerLoading.value) {
-    return
-  }
-
-  if (!ipv4Pattern.test(peerIp.value)) {
-    notification.showError('Вкажи коректну IPv4 адресу peer-а')
-    return
-  }
-
-  peerLoading.value = true
-
-  try {
-    await wireguardApi.addPeer(networkId.value, {
-      allowed_ips: [peerIp.value],
-    })
-
-    notification.showSuccess('Peer додано')
-    addPeerDialog.value = false
-    peerIp.value = ''
-    await loadNetwork()
-  } catch (error) {
-    notification.showError(api.getErrorMessage(error, 'Не вдалося додати peer'))
-  } finally {
-    peerLoading.value = false
-  }
-}
-
-const showConfig = async (peerId: number) => {
-  try {
-    peerConfig.value = await wireguardApi.getPeerConfig(peerId)
-    configDialog.value = true
-  } catch (error) {
-    notification.showError(api.getErrorMessage(error, 'Не вдалося отримати конфіг'))
-  }
-}
-
 const downloadConfig = (peerId: number) => {
   window.open(`/api/vpn/wireguard/peers/${peerId}/config/download`, '_blank', 'noopener')
 }
 
-const closeQr = () => {
-  qrDialog.value = false
-
-  if (qrImageUrl.value) {
-    URL.revokeObjectURL(qrImageUrl.value)
-    qrImageUrl.value = null
+const goToCreatePeer = async () => {
+  if (!network.value) {
+    return
   }
+
+  await router.push(`/wireguard/networks/${network.value.id}/peers/create`)
 }
 
-const showQr = async (peerId: number) => {
-  closeQr()
-
-  try {
-    const blob = await wireguardApi.getPeerQr(peerId)
-    qrImageUrl.value = URL.createObjectURL(blob)
-    qrDialog.value = true
-  } catch (error) {
-    notification.showError(api.getErrorMessage(error, 'Не вдалося отримати QR код'))
+const goToPeerConfig = async (peerId: number) => {
+  if (!network.value) {
+    return
   }
+
+  await router.push({
+    path: `/wireguard/peers/${peerId}/config`,
+    query: { networkId: String(network.value.id) },
+  })
 }
 
-onBeforeUnmount(() => {
-  closeQr()
-})
+const goToPeerQr = async (peerId: number) => {
+  if (!network.value) {
+    return
+  }
+
+  await router.push({
+    path: `/wireguard/peers/${peerId}/qr`,
+    query: { networkId: String(network.value.id) },
+  })
+}
 
 await loadNetwork()
 </script>

@@ -1,4 +1,6 @@
 # Nuxt dev/build outputs
+**/embed/webui
+**/*.db
 **/.output
 **/.data
 **/.nuxt
