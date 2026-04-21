@@ -47,7 +47,7 @@
         v-if="network"
         color="primary"
         prepend-icon="mdi-plus"
-        @click="goToCreatePeer"
+        :to="`/wireguard/networks/${network.id}/peers/create`"
       >
         Додати peer
       </v-btn>
@@ -174,14 +174,6 @@ const bringDown = async () => {
 
 const downloadConfig = (peerId: number) => {
   window.open(`/api/vpn/wireguard/peers/${peerId}/config/download`, '_blank', 'noopener')
-}
-
-const goToCreatePeer = async () => {
-  if (!network.value) {
-    return
-  }
-
-  await router.push(`/wireguard/networks/${network.value.id}/peers/create`)
 }
 
 const goToPeerConfig = async (peerId: number) => {
