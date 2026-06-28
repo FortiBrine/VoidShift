@@ -2,46 +2,57 @@ package app
 
 import (
 	"context"
+	"errors"
+	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/FortiBrine/VoidShift/internal/auth"
-	"github.com/FortiBrine/VoidShift/internal/session"
-	"github.com/FortiBrine/VoidShift/internal/shared/config"
-	"github.com/FortiBrine/VoidShift/internal/shared/database"
-	"github.com/FortiBrine/VoidShift/internal/shared/http"
-	"github.com/FortiBrine/VoidShift/internal/shared/http/middleware"
-	"github.com/FortiBrine/VoidShift/internal/shared/http/router"
-	"github.com/FortiBrine/VoidShift/internal/shared/http/validator"
-	"github.com/FortiBrine/VoidShift/internal/shared/logger"
+	"github.com/FortiBrine/VoidShift/internal/config"
+	"github.com/FortiBrine/VoidShift/internal/database"
+	apphttp "github.com/FortiBrine/VoidShift/internal/http"
+	"github.com/FortiBrine/VoidShift/internal/http/middleware"
+	"github.com/FortiBrine/VoidShift/internal/http/router"
+	"github.com/FortiBrine/VoidShift/internal/http/validator"
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
-	"github.com/labstack/echo/v5"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/extractors"
+	"github.com/gofiber/fiber/v3/middleware/session"
+	"github.com/gofiber/storage/memory/v2"
+	"github.com/valyala/fasthttp"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	Echo             *echo.Echo
+	Fiber            *fiber.App
 	DB               *gorm.DB
-	SessionService   *session.Service
 	UserService      *user.Service
 	AuthService      *auth.Service
 	WireGuardService *wireguard.Service
 	WireGuardClient  *wgctrl.Client
 }
 
-func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
-	l := logger.New(cfg.Environment)
-
+func NewApp(
+	ctx context.Context, cfg config.Config,
+	l *slog.Logger,
+) (*App, error) {
 	db, err := database.Open(cfg, l)
 	if err != nil {
 		return nil, err
 	}
 
-	sessionRepository := session.NewGormRepository(db)
-	sessionService := session.NewService(sessionRepository, 5*24*time.Hour)
-	if err := sessionService.Load(); err != nil {
-		return nil, err
+	sessionConfig := session.Config{
+		Storage:           memory.New(),
+		IdleTimeout:       30 * time.Minute,
+		AbsoluteTimeout:   24 * time.Hour,
+		CookieHTTPOnly:    true,
+		CookiePath:        "/",
+		CookieSecure:      !cfg.Environment.IsDev(),
+		CookieSessionOnly: true,
+		CookieSameSite:    "Lax",
+		Extractor:         extractors.FromCookie("voidshift_session"),
 	}
 
 	userRepository := user.NewGormRepository(db)
@@ -50,7 +61,7 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 		return nil, err
 	}
 
-	authService := auth.NewService(sessionService, userService)
+	authService := auth.NewService(userService)
 
 	client, err := wgctrl.New()
 	if err != nil {
@@ -64,17 +75,28 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 		return nil, err
 	}
 
-	e := echo.New()
-	e.Logger = l
-	e.Validator = validator.NewCustomValidator()
-	e.HTTPErrorHandler = http.CustomErrorHandler
-	middleware.Register(e)
-	router.RegisterRoutes(e, userService, sessionService, authService, wireGuardService)
+	app := fiber.New(fiber.Config{
+		ErrorHandler:    apphttp.NewCustomErrorHandler(l),
+		StructValidator: validator.NewCustomValidator(),
+		CaseSensitive:   true,
+		ProxyHeader:     fasthttp.HeaderXForwardedFor,
+	})
+
+	app.Hooks().OnListen(func(listenData fiber.ListenData) error {
+		l.Info("Server is starting",
+			"host", listenData.Host,
+			"port", listenData.Port,
+			"tls", listenData.TLS,
+		)
+		return nil
+	})
+
+	middleware.Register(app, l, cfg, sessionConfig)
+	router.RegisterRoutes(app, authService, wireGuardService)
 
 	return &App{
-		Echo:             e,
+		Fiber:            app,
 		DB:               db,
-		SessionService:   sessionService,
 		UserService:      userService,
 		AuthService:      authService,
 		WireGuardService: wireGuardService,
@@ -82,9 +104,20 @@ func NewApp(ctx context.Context, cfg config.Config) (*App, error) {
 	}, nil
 }
 
-func (a *App) Close() error {
-	if a.WireGuardClient != nil {
-		return a.WireGuardClient.Close()
+func (app *App) Start(ctx context.Context, cfg config.Config) error {
+	if err := app.Fiber.Listen(cfg.HttpAddress, fiber.ListenConfig{
+		GracefulContext:       ctx,
+		ShutdownTimeout:       cfg.GracefulTimeout,
+		DisableStartupMessage: true,
+	}); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
+}
+
+func (app *App) Close() error {
+	if app.WireGuardClient != nil {
+		return app.WireGuardClient.Close()
 	}
 	return nil
 }

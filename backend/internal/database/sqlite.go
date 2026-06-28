@@ -3,8 +3,8 @@ package database
 import (
 	"log/slog"
 
-	"github.com/FortiBrine/VoidShift/internal/shared/config"
-	"github.com/FortiBrine/VoidShift/internal/shared/logger"
+	"github.com/FortiBrine/VoidShift/internal/config"
+	"github.com/FortiBrine/VoidShift/internal/logger"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )

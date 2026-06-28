@@ -7,10 +7,19 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type Environment string
+
+const (
+	EnvDev  Environment = "dev"
+	EnvProd Environment = "prod"
+)
+
+func (e Environment) IsDev() bool { return e == EnvDev }
+
 type Config struct {
-	Environment        string `env:"ENVIRONMENT"`
-	SqliteDatabasePath string `env:"SQLITE_DATABASE_PATH"`
-	MysqlDsn           string `env:"MYSQL_DSN"`
+	Environment        Environment `env:"ENVIRONMENT"`
+	SqliteDatabasePath string      `env:"SQLITE_DATABASE_PATH"`
+	MysqlDsn           string      `env:"MYSQL_DSN"`
 
 	HostAddress     string        `env:"HOST_ADDRESS"`
 	GracefulTimeout time.Duration `env:"GRACEFUL_TIMEOUT" envDefault:"5s"`

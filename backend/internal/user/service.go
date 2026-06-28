@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FortiBrine/VoidShift/internal/shared/config"
+	"github.com/FortiBrine/VoidShift/internal/config"
 	"golang.org/x/crypto/bcrypt"
 )
 

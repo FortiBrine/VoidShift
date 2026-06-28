@@ -1,11 +1,11 @@
 package wireguard
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/FortiBrine/VoidShift/internal/shared"
-	"github.com/labstack/echo/v5"
+	"github.com/gofiber/fiber/v3"
 )
 
 type Handler struct {
@@ -13,21 +13,21 @@ type Handler struct {
 }
 
 type GenerateNetworkRequest struct {
-	Name       string `json:"name" validate:"required,min=4,max=100"`
-	Address    string `json:"address" validate:"required,cidr"`
-	ListenPort int    `json:"listen_port" validate:"required,min=1024,max=65535"`
+	Name       string `json:"name" validate:"required,min=4,max=100" message:"Name must be between 4 and 100 characters"`
+	Address    string `json:"address" validate:"required,cidr" message:"Address must be CIDR"`
+	ListenPort int    `json:"listen_port" validate:"required,min=1024,max=65535" message:"ListenPort must be between 1024 and 65535"`
 }
 
 type GeneratePeerRequest struct {
-	AllowedIPs []string `json:"allowed_ips" validate:"required,dive,ipv4"`
+	AllowedIPs []string `json:"allowed_ips" validate:"required,dive,ipv4" message:"AllowedIPs must be valid IPv4 addresses"`
 }
 
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-func (h *Handler) GetNetworks(c *echo.Context) error {
-	ctx := c.Request().Context()
+func (h *Handler) GetNetworks(c fiber.Ctx) error {
+	ctx := c.Context()
 
 	networks, err := h.service.GetNetworks(ctx)
 	if err != nil {
@@ -44,19 +44,15 @@ func (h *Handler) GetNetworks(c *echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.Status(http.StatusOK).JSON(map[string]interface{}{
 		"networks": networksResult,
 	})
 }
 
-func (h *Handler) GenerateNetwork(c *echo.Context) error {
-	ctx := c.Request().Context()
-	var request GenerateNetworkRequest
-	if err := c.Bind(&request); err != nil {
-		return err
-	}
-
-	if err := c.Validate(request); err != nil {
+func (h *Handler) GenerateNetwork(c fiber.Ctx) error {
+	ctx := c.Context()
+	request := new(GenerateNetworkRequest)
+	if err := c.Bind().JSON(request); err != nil {
 		return err
 	}
 
@@ -65,7 +61,7 @@ func (h *Handler) GenerateNetwork(c *echo.Context) error {
 		return fmt.Errorf("failed to generate network: %w", err)
 	}
 
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.Status(http.StatusCreated).JSON(map[string]interface{}{
 		"id":          network.ID,
 		"public_key":  network.PublicKey,
 		"address":     network.Address,
@@ -73,14 +69,14 @@ func (h *Handler) GenerateNetwork(c *echo.Context) error {
 	})
 }
 
-func (h *Handler) GetNetwork(c *echo.Context) error {
-	ctx := c.Request().Context()
-	networkID, err := echo.PathParam[uint](c, "id")
-	if err != nil {
-		return shared.ErrNetworkNotFound
-	}
+func (h *Handler) GetNetwork(c fiber.Ctx) error {
+	ctx := c.Context()
+	networkID := fiber.Params[uint](c, "id")
 
 	network, err := h.service.GetNetworkWithPeers(ctx, networkID)
+	if errors.Is(err, ErrNetworkNotFound) {
+		return c.SendStatus(http.StatusNotFound)
+	}
 	if err != nil {
 		return err
 	}
@@ -94,7 +90,7 @@ func (h *Handler) GetNetwork(c *echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
+	return c.Status(http.StatusOK).JSON(map[string]any{
 		"id":          network.ID,
 		"public_key":  network.PublicKey,
 		"address":     network.Address,
@@ -105,131 +101,125 @@ func (h *Handler) GetNetwork(c *echo.Context) error {
 
 }
 
-func (h *Handler) RemoveNetwork(c *echo.Context) error {
-	ctx := c.Request().Context()
-	networkID, err := echo.PathParam[uint](c, "id")
-	if err != nil {
-		return shared.ErrNetworkNotFound
-	}
+func (h *Handler) RemoveNetwork(c fiber.Ctx) error {
+	ctx := c.Context()
+	networkID := fiber.Params[uint](c, "id")
 
 	if err := h.service.RemoveNetwork(ctx, networkID); err != nil {
+		if errors.Is(err, ErrNetworkNotFound) {
+			return c.SendStatus(http.StatusNotFound)
+		}
 		return err
 	}
 
-	return c.NoContent(http.StatusNoContent)
+	return c.SendStatus(http.StatusNoContent)
 }
 
-func (h *Handler) UpNetwork(c *echo.Context) error {
-	ctx := c.Request().Context()
-	networkID, err := echo.PathParam[uint](c, "id")
-	if err != nil {
-		return shared.ErrNetworkNotFound
-	}
+func (h *Handler) UpNetwork(c fiber.Ctx) error {
+	ctx := c.Context()
+	networkID := fiber.Params[uint](c, "id")
 
 	if err := h.service.UpNetwork(ctx, networkID); err != nil {
+		if errors.Is(err, ErrNetworkNotFound) {
+			return c.SendStatus(http.StatusNotFound)
+		}
 		return err
 	}
 
-	return c.NoContent(http.StatusNoContent)
+	return c.SendStatus(http.StatusNoContent)
 }
 
-func (h *Handler) DownNetwork(c *echo.Context) error {
-	ctx := c.Request().Context()
-	networkID, err := echo.PathParam[uint](c, "id")
-	if err != nil {
-		return shared.ErrNetworkNotFound
-	}
+func (h *Handler) DownNetwork(c fiber.Ctx) error {
+	ctx := c.Context()
+	networkID := fiber.Params[uint](c, "id")
 
 	if err := h.service.DownNetwork(ctx, networkID); err != nil {
+		if errors.Is(err, ErrNetworkNotFound) {
+			return c.SendStatus(http.StatusNotFound)
+		}
 		return err
 	}
 
-	return c.NoContent(http.StatusNoContent)
+	return c.SendStatus(http.StatusNoContent)
 }
 
-func (h *Handler) GeneratePeer(c *echo.Context) error {
-	ctx := c.Request().Context()
-	var request GeneratePeerRequest
-	if err := c.Bind(&request); err != nil {
+func (h *Handler) GeneratePeer(c fiber.Ctx) error {
+	ctx := c.Context()
+	request := new(GeneratePeerRequest)
+	if err := c.Bind().JSON(request); err != nil {
 		return err
 	}
 
-	if err := c.Validate(request); err != nil {
-		return err
-	}
-
-	networkID, err := echo.PathParam[uint](c, "id")
-	if err != nil {
-		return shared.ErrNetworkNotFound
-	}
+	networkID := fiber.Params[uint](c, "id")
 
 	peer, err := h.service.GeneratePeer(ctx, networkID, request.AllowedIPs)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, map[string]any{
+	return c.Status(http.StatusCreated).JSON(map[string]any{
 		"id":         peer.ID,
 		"public_key": peer.PublicKey,
 	})
 }
 
-func (h *Handler) RemovePeer(c *echo.Context) error {
-	ctx := c.Request().Context()
-	peerID, err := echo.PathParam[uint](c, "peerId")
-	if err != nil {
-		return shared.ErrPeerNotFound
-	}
+func (h *Handler) RemovePeer(c fiber.Ctx) error {
+	ctx := c.Context()
+	peerID := fiber.Params[uint](c, "peerId")
 
 	if err := h.service.RemovePeer(ctx, peerID); err != nil {
+		if errors.Is(err, ErrPeerNotFound) {
+			return c.SendStatus(http.StatusNotFound)
+		}
 		return err
 	}
 
-	return c.NoContent(http.StatusNoContent)
+	return c.SendStatus(http.StatusNoContent)
 }
 
-func (h *Handler) GetPeerConfig(c *echo.Context) error {
-	ctx := c.Request().Context()
-	peerID, err := echo.PathParam[uint](c, "peerId")
-	if err != nil {
-		return shared.ErrPeerNotFound
-	}
+func (h *Handler) GetPeerConfig(c fiber.Ctx) error {
+	ctx := c.Context()
+	peerID := fiber.Params[uint](c, "peerId")
 
 	config, err := h.service.GetPeerConfig(ctx, peerID)
 	if err != nil {
+		if errors.Is(err, ErrPeerNotFound) {
+			return c.SendStatus(http.StatusNotFound)
+		}
 		return err
 	}
 
-	return c.String(http.StatusOK, config)
+	return c.Status(http.StatusOK).SendString(config)
 }
 
-func (h *Handler) DownloadPeerConfig(c *echo.Context) error {
-	ctx := c.Request().Context()
-	peerID, err := echo.PathParam[uint](c, "peerId")
-	if err != nil {
-		return shared.ErrPeerNotFound
-	}
+func (h *Handler) DownloadPeerConfig(c fiber.Ctx) error {
+	ctx := c.Context()
+	peerID := fiber.Params[uint](c, "peerId")
 
 	config, err := h.service.GetPeerConfig(ctx, peerID)
 	if err != nil {
+		if errors.Is(err, ErrPeerNotFound) {
+			return c.SendStatus(http.StatusNotFound)
+		}
 		return err
 	}
 
-	c.Response().Header().Set(echo.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"peer-%d.conf\"", peerID))
-	return c.String(http.StatusOK, config)
+	c.Response().Header.Set(fiber.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"peer-%d.conf\"", peerID))
+	return c.Status(http.StatusOK).SendString(config)
 }
 
-func (h *Handler) GetPeerConfigQR(c *echo.Context) error {
-	ctx := c.Request().Context()
-	peerID, err := echo.PathParam[uint](c, "peerId")
-	if err != nil {
-		return shared.ErrPeerNotFound
-	}
+func (h *Handler) GetPeerConfigQR(c fiber.Ctx) error {
+	ctx := c.Context()
+	peerID := fiber.Params[uint](c, "peerId")
 
 	qrCode, err := h.service.GetPeerConfigQR(ctx, peerID)
 	if err != nil {
+		if errors.Is(err, ErrPeerNotFound) {
+			return c.SendStatus(http.StatusNotFound)
+		}
 		return err
 	}
 
-	return c.Blob(http.StatusOK, "image/png", qrCode)
+	c.Type("png")
+	return c.Send(qrCode)
 }

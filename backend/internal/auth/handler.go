@@ -1,13 +1,12 @@
 package auth
 
 import (
+	"errors"
 	"net/http"
-	"time"
 
-	"github.com/labstack/echo/v5"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/session"
 )
-
-const SessionCookieName = "voidshift.session"
 
 type LoginRequestDto struct {
 	Username string `json:"username" validate:"required,min=4,max=30,alphanum"`
@@ -26,60 +25,43 @@ func NewLoginHandler(
 	}
 }
 
-func (h *LoginHandler) Login(c *echo.Context) error {
+func (h *LoginHandler) Login(c fiber.Ctx) error {
 	req := new(LoginRequestDto)
-	if err := c.Bind(req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
-	}
-
-	if err := c.Validate(req); err != nil {
+	if err := c.Bind().JSON(req); err != nil {
 		return err
 	}
 
-	result, err := h.authService.Login(
-		c.Request().Context(),
+	sess := session.FromContext(c)
+	if sess.Get("username") != nil {
+		return c.SendStatus(http.StatusConflict)
+	}
+
+	err := h.authService.Login(
+		c.Context(),
 		req.Username,
 		req.Password,
-		c.Request().UserAgent(),
-		c.RealIP(),
+		c.UserAgent(),
+		c.IP(),
 	)
 
+	if errors.Is(err, ErrWrongPassword) || errors.Is(err, ErrUserNotFound) {
+		return c.SendStatus(http.StatusUnauthorized)
+	}
 	if err != nil {
 		return err
 	}
 
-	c.SetCookie(&http.Cookie{
-		Name:     SessionCookieName,
-		Value:    result.SessionID,
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  result.ExpiresAt,
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   int(time.Until(result.ExpiresAt).Seconds()),
-	})
+	sess.Set("username", req.Username)
 
-	return c.NoContent(http.StatusNoContent)
+	return c.SendStatus(http.StatusNoContent)
 }
 
-func (h *LoginHandler) Logout(c *echo.Context) error {
-	cookie, err := c.Cookie(SessionCookieName)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, "session not found")
+func (h *LoginHandler) Logout(c fiber.Ctx) error {
+	sess := session.FromContext(c)
+	if sess.Get("username") == nil {
+		return c.SendStatus(http.StatusUnauthorized)
 	}
+	sess.Delete("username")
 
-	if err := h.authService.LogoutSession(c.Request().Context(), cookie.Value); err != nil {
-		return err
-	}
-
-	c.SetCookie(&http.Cookie{
-		Name:     SessionCookieName,
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Expires:  time.Unix(0, 0),
-		SameSite: http.SameSiteLaxMode,
-		MaxAge:   -1,
-	})
-
-	return c.NoContent(http.StatusNoContent)
+	return c.SendStatus(http.StatusNoContent)
 }

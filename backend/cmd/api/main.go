@@ -4,43 +4,40 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/FortiBrine/VoidShift/internal/app"
-	"github.com/FortiBrine/VoidShift/internal/shared/config"
-	"github.com/labstack/echo/v5"
+	"github.com/FortiBrine/VoidShift/internal/config"
+	"github.com/FortiBrine/VoidShift/internal/logger"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Printf("error loading config: %v", err)
-		return
+		slog.Error("error loading config", "error", err)
+		os.Exit(1)
 	}
+
+	l := logger.New(cfg.Environment)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	application, err := app.NewApp(ctx, cfg)
+	a, err := app.NewApp(ctx, cfg, l)
 	if err != nil {
-		log.Printf("failed to initialize app: %v", err)
-		return
+		l.Error("error creating app", "error", err)
+		os.Exit(1)
 	}
-	defer func() {
-		if err := application.Close(); err != nil {
-			log.Printf("failed to close app: %v", err)
+	defer func(a *app.App) {
+		if err := a.Close(); err != nil {
+			l.Error("error closing app", "error", err)
 		}
-	}()
+	}(a)
 
-	startConfig := echo.StartConfig{
-		Address:         cfg.HttpAddress,
-		GracefulTimeout: cfg.GracefulTimeout,
-	}
-
-	if err := startConfig.Start(ctx, application.Echo); err != nil {
-		application.Echo.Logger.Error("failed to start server", "error", err)
+	if err = a.Start(ctx, cfg); err != nil {
+		l.Error("failed to start app", "error", err)
 	}
 }

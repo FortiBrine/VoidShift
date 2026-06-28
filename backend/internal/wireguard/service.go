@@ -8,11 +8,15 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/FortiBrine/VoidShift/internal/shared"
 	"github.com/skip2/go-qrcode"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
 	"gorm.io/gorm"
+)
+
+var (
+	ErrNetworkNotFound = errors.New("network not found")
+	ErrPeerNotFound    = errors.New("peer not found")
 )
 
 type Service struct {
@@ -102,7 +106,7 @@ func (s *Service) RemovePeer(
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return shared.ErrPeerNotFound
+			return ErrPeerNotFound
 		}
 
 		return err
@@ -111,7 +115,7 @@ func (s *Service) RemovePeer(
 	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return shared.ErrPeerNotFound
+			return ErrPeerNotFound
 		}
 
 		return err
@@ -158,7 +162,7 @@ func (s *Service) GetPeerConfig(
 	peer, err := s.repository.GetPeer(ctx, peerID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", shared.ErrPeerNotFound
+			return "", ErrPeerNotFound
 		}
 
 		return "", err
@@ -167,7 +171,7 @@ func (s *Service) GetPeerConfig(
 	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", shared.ErrNetworkNotFound
+			return "", ErrNetworkNotFound
 		}
 
 		return "", err
@@ -175,7 +179,7 @@ func (s *Service) GetPeerConfig(
 
 	_, mask, found := strings.Cut(network.Address, "/")
 	if !found {
-		return "", shared.ErrNetworkNotFound
+		return "", ErrNetworkNotFound
 	}
 
 	config := strings.Builder{}
@@ -236,7 +240,7 @@ func (s *Service) RemoveNetwork(
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return shared.ErrNetworkNotFound
+			return ErrNetworkNotFound
 		}
 
 		return fmt.Errorf("failed to get network: %w", err)
@@ -263,7 +267,7 @@ func (s *Service) GetNetworkWithPeers(
 	network, err := s.repository.GetNetworkWithPeers(ctx, networkID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, shared.ErrNetworkNotFound
+			return nil, ErrNetworkNotFound
 		}
 
 		return nil, err
@@ -279,7 +283,7 @@ func (s *Service) UpNetwork(
 	network, err := s.repository.GetNetworkWithPeers(ctx, networkID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return shared.ErrNetworkNotFound
+			return ErrNetworkNotFound
 		}
 
 		return err
@@ -351,7 +355,7 @@ func (s *Service) DownNetwork(
 	network, err := s.repository.GetNetwork(ctx, networkID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return shared.ErrNetworkNotFound
+			return ErrNetworkNotFound
 		}
 
 		return fmt.Errorf("failed to get network: %w", err)

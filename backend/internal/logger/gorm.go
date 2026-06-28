@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/FortiBrine/VoidShift/internal/config"
 	gormlogger "gorm.io/gorm/logger"
 )
 
@@ -14,9 +15,9 @@ type GormLogger struct {
 	logLevel      gormlogger.LogLevel
 }
 
-func NewGormLogger(log *slog.Logger, env string) gormlogger.Interface {
+func NewGormLogger(log *slog.Logger, env config.Environment) gormlogger.Interface {
 	level := gormlogger.Warn
-	if env == "dev" {
+	if env == config.EnvDev {
 		level = gormlogger.Info
 	}
 

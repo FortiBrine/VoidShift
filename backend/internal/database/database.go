@@ -4,7 +4,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/FortiBrine/VoidShift/internal/shared/config"
+	"github.com/FortiBrine/VoidShift/internal/config"
 	"gorm.io/gorm"
 )
 
