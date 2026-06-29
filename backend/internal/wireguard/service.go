@@ -25,12 +25,19 @@ type Service struct {
 	hostAddress string
 }
 
-func NewService(repository Repository, client *wgctrl.Client, hostAddress string) *Service {
+func NewService(
+	repository Repository,
+	hostAddress string,
+) (*Service, error) {
+	client, err := wgctrl.New()
+	if err != nil {
+		return nil, err
+	}
 	return &Service{
 		repository:  repository,
 		client:      client,
 		hostAddress: hostAddress,
-	}
+	}, nil
 }
 
 func (s *Service) Load() error {
@@ -366,4 +373,8 @@ func (s *Service) DownNetwork(
 	}
 
 	return nil
+}
+
+func (s *Service) Close() error {
+	return s.client.Close()
 }

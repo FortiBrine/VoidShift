@@ -21,17 +21,15 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/gofiber/storage/memory/v2"
 	"github.com/valyala/fasthttp"
-	"golang.zx2c4.com/wireguard/wgctrl"
 	"gorm.io/gorm"
 )
 
 type App struct {
-	Fiber            *fiber.App
-	DB               *gorm.DB
-	UserService      *user.Service
-	AuthService      *auth.Service
-	WireGuardService *wireguard.Service
-	WireGuardClient  *wgctrl.Client
+	fiber            *fiber.App
+	db               *gorm.DB
+	userService      *user.Service
+	authService      *auth.Service
+	wireGuardService *wireguard.Service
 }
 
 func NewApp(
@@ -63,15 +61,16 @@ func NewApp(
 
 	authService := auth.NewService(userService)
 
-	client, err := wgctrl.New()
+	wireGuardRepository := wireguard.NewGormRepository(db)
+	wireGuardService, err := wireguard.NewService(wireGuardRepository, cfg.HostAddress)
 	if err != nil {
 		return nil, err
 	}
-
-	wireGuardRepository := wireguard.NewGormRepository(db)
-	wireGuardService := wireguard.NewService(wireGuardRepository, client, cfg.HostAddress)
 	if err := wireGuardService.Load(); err != nil {
-		_ = client.Close()
+		err := wireGuardService.Close()
+		if err != nil {
+			return nil, err
+		}
 		return nil, err
 	}
 
@@ -95,17 +94,16 @@ func NewApp(
 	router.RegisterRoutes(app, authService, wireGuardService)
 
 	return &App{
-		Fiber:            app,
-		DB:               db,
-		UserService:      userService,
-		AuthService:      authService,
-		WireGuardService: wireGuardService,
-		WireGuardClient:  client,
+		fiber:            app,
+		db:               db,
+		userService:      userService,
+		authService:      authService,
+		wireGuardService: wireGuardService,
 	}, nil
 }
 
 func (app *App) Start(ctx context.Context, cfg config.Config) error {
-	if err := app.Fiber.Listen(cfg.HttpAddress, fiber.ListenConfig{
+	if err := app.fiber.Listen(cfg.HttpAddress, fiber.ListenConfig{
 		GracefulContext:       ctx,
 		ShutdownTimeout:       cfg.GracefulTimeout,
 		DisableStartupMessage: true,
@@ -116,8 +114,8 @@ func (app *App) Start(ctx context.Context, cfg config.Config) error {
 }
 
 func (app *App) Close() error {
-	if app.WireGuardClient != nil {
-		return app.WireGuardClient.Close()
+	if app.wireGuardService != nil {
+		return app.wireGuardService.Close()
 	}
 	return nil
 }
