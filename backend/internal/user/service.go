@@ -17,25 +17,17 @@ func NewService(repository Repository) *Service {
 }
 
 func (s *Service) Load(ctx context.Context, cfg config.Config) error {
-	err := s.repository.Migrate()
-	if err != nil {
-		return err
-	}
-
 	if cfg.AdminUsername != "" && cfg.AdminPassword != "" {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcrypt.DefaultCost)
-
 		if err != nil {
 			return fmt.Errorf("failed to hash admin password: %w", err)
 		}
 
-		err = s.CreateUser(ctx, &User{
+		if err := s.CreateUser(ctx, &User{
 			Username:     cfg.AdminUsername,
 			PasswordHash: string(hashed),
 			Admin:        true,
-		})
-
-		if err != nil {
+		}); err != nil {
 			return fmt.Errorf("failed to create admin user: %w", err)
 		}
 	}

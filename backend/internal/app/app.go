@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -21,12 +22,11 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/gofiber/storage/memory/v2"
 	"github.com/valyala/fasthttp"
-	"gorm.io/gorm"
 )
 
 type App struct {
 	fiber            *fiber.App
-	db               *gorm.DB
+	db               *sql.DB
 	userService      *user.Service
 	authService      *auth.Service
 	wireGuardService *wireguard.Service
@@ -36,8 +36,12 @@ func NewApp(
 	ctx context.Context, cfg config.Config,
 	l *slog.Logger,
 ) (*App, error) {
-	db, err := database.Open(cfg, l)
+	db, err := database.Open(cfg)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := database.Migrate(ctx, db); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +57,7 @@ func NewApp(
 		Extractor:         extractors.FromCookie("voidshift_session"),
 	}
 
-	userRepository := user.NewGormRepository(db)
+	userRepository := user.NewSqlcRepository(db)
 	userService := user.NewService(userRepository)
 	if err := userService.Load(ctx, cfg); err != nil {
 		return nil, err
@@ -61,16 +65,13 @@ func NewApp(
 
 	authService := auth.NewService(userService)
 
-	wireGuardRepository := wireguard.NewGormRepository(db)
+	wireGuardRepository := wireguard.NewSqlcRepository(db)
 	wireGuardService, err := wireguard.NewService(wireGuardRepository, cfg.HostAddress)
 	if err != nil {
 		return nil, err
 	}
 	if err := wireGuardService.Load(); err != nil {
-		err := wireGuardService.Close()
-		if err != nil {
-			return nil, err
-		}
+		_ = wireGuardService.Close()
 		return nil, err
 	}
 
@@ -115,7 +116,12 @@ func (app *App) Start(ctx context.Context, cfg config.Config) error {
 
 func (app *App) Close() error {
 	if app.wireGuardService != nil {
-		return app.wireGuardService.Close()
+		if err := app.wireGuardService.Close(); err != nil {
+			return err
+		}
+	}
+	if app.db != nil {
+		return app.db.Close()
 	}
 	return nil
 }

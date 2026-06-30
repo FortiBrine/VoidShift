@@ -2,13 +2,13 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/FortiBrine/VoidShift/internal/user"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 var ErrUserNotFound = errors.New("user not found")
@@ -35,7 +35,7 @@ func (s *Service) Login(
 ) error {
 	u, err := s.userService.GetByUsername(ctx, username)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrUserNotFound
 		}
 		return fmt.Errorf("get user by username: %w", err)

@@ -2,6 +2,7 @@ package wireguard
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net"
@@ -11,7 +12,6 @@ import (
 	"github.com/skip2/go-qrcode"
 	"golang.zx2c4.com/wireguard/wgctrl"
 	"golang.zx2c4.com/wireguard/wgctrl/wgtypes"
-	"gorm.io/gorm"
 )
 
 var (
@@ -41,7 +41,7 @@ func NewService(
 }
 
 func (s *Service) Load() error {
-	return s.repository.Migrate()
+	return nil
 }
 
 func (s *Service) GetNetworks(
@@ -112,7 +112,7 @@ func (s *Service) RemovePeer(
 	peer, err := s.repository.GetPeer(ctx, peerID)
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrPeerNotFound
 		}
 
@@ -121,7 +121,7 @@ func (s *Service) RemovePeer(
 
 	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrPeerNotFound
 		}
 
@@ -134,9 +134,7 @@ func (s *Service) RemovePeer(
 	}
 
 	if !up {
-		_, err = s.repository.RemovePeer(ctx, peerID)
-
-		return err
+		return s.repository.RemovePeer(ctx, peerID)
 	}
 
 	publicKey, err := wgtypes.ParseKey(peer.PublicKey)
@@ -157,9 +155,7 @@ func (s *Service) RemovePeer(
 		return fmt.Errorf("failed to remove peer from device: %w", err)
 	}
 
-	_, err = s.repository.RemovePeer(ctx, peerID)
-
-	return err
+	return s.repository.RemovePeer(ctx, peerID)
 }
 
 func (s *Service) GetPeerConfig(
@@ -168,7 +164,7 @@ func (s *Service) GetPeerConfig(
 ) (string, error) {
 	peer, err := s.repository.GetPeer(ctx, peerID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrPeerNotFound
 		}
 
@@ -177,7 +173,7 @@ func (s *Service) GetPeerConfig(
 
 	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return "", ErrNetworkNotFound
 		}
 
@@ -246,7 +242,7 @@ func (s *Service) RemoveNetwork(
 	network, err := s.repository.GetNetwork(ctx, networkID)
 
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNetworkNotFound
 		}
 
@@ -256,8 +252,7 @@ func (s *Service) RemoveNetwork(
 		return fmt.Errorf("failed to remove device: %w", err)
 	}
 
-	_, err = s.repository.RemoveNetwork(ctx, networkID)
-	return err
+	return s.repository.RemoveNetwork(ctx, networkID)
 }
 
 func (s *Service) GetNetwork(
@@ -273,7 +268,7 @@ func (s *Service) GetNetworkWithPeers(
 ) (*Network, error) {
 	network, err := s.repository.GetNetworkWithPeers(ctx, networkID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNetworkNotFound
 		}
 
@@ -289,7 +284,7 @@ func (s *Service) UpNetwork(
 ) error {
 	network, err := s.repository.GetNetworkWithPeers(ctx, networkID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNetworkNotFound
 		}
 
@@ -361,7 +356,7 @@ func (s *Service) DownNetwork(
 ) error {
 	network, err := s.repository.GetNetwork(ctx, networkID)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, sql.ErrNoRows) {
 			return ErrNetworkNotFound
 		}
 

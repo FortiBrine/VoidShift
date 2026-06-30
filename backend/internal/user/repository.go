@@ -2,43 +2,58 @@ package user
 
 import (
 	"context"
+	"database/sql"
 
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
+	"github.com/FortiBrine/VoidShift/internal/db"
 )
 
 type Repository interface {
-	Migrate() error
 	CreateUser(ctx context.Context, user *User) error
 	GetByID(ctx context.Context, id uint) (*User, error)
 	GetByUsername(ctx context.Context, username string) (*User, error)
 }
 
-type GormRepository struct {
-	db *gorm.DB
+type SqlcRepository struct {
+	q *db.Queries
 }
 
-func NewGormRepository(db *gorm.DB) *GormRepository {
-	return &GormRepository{db: db}
+func NewSqlcRepository(database *sql.DB) *SqlcRepository {
+	return &SqlcRepository{q: db.New(database)}
 }
 
-func (r *GormRepository) Migrate() error {
-	return r.db.AutoMigrate(&User{})
+func (r *SqlcRepository) CreateUser(ctx context.Context, user *User) error {
+	admin := int64(0)
+	if user.Admin {
+		admin = 1
+	}
+	return r.q.CreateUser(ctx, db.CreateUserParams{
+		Username:     user.Username,
+		PasswordHash: user.PasswordHash,
+		Admin:        admin,
+	})
 }
 
-func (r *GormRepository) CreateUser(ctx context.Context, user *User) error {
-	return gorm.G[User](r.db, clause.OnConflict{
-		Columns:   []clause.Column{{Name: "username"}},
-		DoNothing: true,
-	}).Create(ctx, user)
+func (r *SqlcRepository) GetByID(ctx context.Context, id uint) (*User, error) {
+	row, err := r.q.GetUserByID(ctx, int64(id))
+	if err != nil {
+		return nil, err
+	}
+	return fromDB(row), nil
 }
 
-func (r *GormRepository) GetByID(ctx context.Context, id uint) (*User, error) {
-	user, err := gorm.G[User](r.db).Where("id = ?", id).First(ctx)
-	return &user, err
+func (r *SqlcRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
+	row, err := r.q.GetUserByUsername(ctx, username)
+	if err != nil {
+		return nil, err
+	}
+	return fromDB(row), nil
 }
 
-func (r *GormRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
-	user, err := gorm.G[User](r.db).Where("username = ?", username).First(ctx)
-	return &user, err
+func fromDB(row db.User) *User {
+	return &User{
+		ID:           uint(row.ID),
+		Username:     row.Username,
+		PasswordHash: row.PasswordHash,
+		Admin:        row.Admin != 0,
+	}
 }

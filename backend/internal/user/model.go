@@ -1,8 +1,8 @@
 package user
 
 type User struct {
-	ID           uint   `gorm:"primary_key"`
-	Username     string `gorm:"uniqueIndex:idx_username"`
+	ID           uint
+	Username     string
 	PasswordHash string
 	Admin        bool
 }

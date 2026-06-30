@@ -1,22 +1,23 @@
 package database
 
 import (
-	"log/slog"
+	"database/sql"
 
 	"github.com/FortiBrine/VoidShift/internal/config"
-	"github.com/FortiBrine/VoidShift/internal/logger"
-	"github.com/glebarez/sqlite"
-	"gorm.io/gorm"
+	_ "modernc.org/sqlite"
 )
 
-func NewSqliteDatabase(config config.Config, l *slog.Logger) (*gorm.DB, error) {
-	db, err := gorm.Open(
-		sqlite.Open(config.SqliteDatabasePath), &gorm.Config{
-			Logger: logger.NewGormLogger(l, config.Environment),
-		},
-	)
-
+func NewSqliteDatabase(cfg config.Config) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", cfg.SqliteDatabasePath)
 	if err != nil {
+		return nil, err
+	}
+
+	// SQLite supports only one concurrent writer.
+	db.SetMaxOpenConns(1)
+
+	if err := db.Ping(); err != nil {
+		_ = db.Close()
 		return nil, err
 	}
 

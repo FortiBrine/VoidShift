@@ -6,7 +6,7 @@ FRONTEND_OUT := $(FRONTEND_DIR)/.output/public
 EMBED_DIR := $(BACKEND_DIR)/internal/embed/webui
 APP_OUT := app
 
-.PHONY: all frontend backend build clean deps
+.PHONY: all frontend backend build clean deps generate
 
 all: build
 
@@ -20,7 +20,10 @@ frontend:
 	cd $(FRONTEND_DIR) && bun install --frozen-lockfile
 	cd $(FRONTEND_DIR) && bun run generate
 
-backend: frontend
+generate:
+	cd $(BACKEND_DIR) && go tool sqlc generate
+
+backend: frontend generate
 	rm -rf $(EMBED_DIR)
 	mkdir -p $(EMBED_DIR)
 	cp -R $(FRONTEND_OUT)/. $(EMBED_DIR)/

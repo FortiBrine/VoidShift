@@ -17,15 +17,14 @@ const (
 func (e Environment) IsDev() bool { return e == EnvDev }
 
 type Config struct {
-	Environment        Environment `env:"ENVIRONMENT"`
-	SqliteDatabasePath string      `env:"SQLITE_DATABASE_PATH"`
-	MysqlDsn           string      `env:"MYSQL_DSN"`
+	Environment        Environment `env:"ENVIRONMENT" envDefault:"dev"`
+	SqliteDatabasePath string      `env:"SQLITE_DATABASE_PATH" envDefault:"./database.db"`
 
-	HostAddress     string        `env:"HOST_ADDRESS"`
+	HostAddress     string        `env:"HOST_ADDRESS" envDefault:"1.2.3.4"`
 	GracefulTimeout time.Duration `env:"GRACEFUL_TIMEOUT" envDefault:"5s"`
 	HttpAddress     string        `env:"HTTP_ADDRESS" envDefault:":8080"`
-	AdminUsername   string        `env:"ADMIN_USERNAME"`
-	AdminPassword   string        `env:"ADMIN_PASSWORD"`
+	AdminUsername   string        `env:"ADMIN_USERNAME" envDefault:"admin"`
+	AdminPassword   string        `env:"ADMIN_PASSWORD" envDefault:"password"`
 }
 
 func Load() (Config, error) {

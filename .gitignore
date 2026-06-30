@@ -1,28 +1,16 @@
-# Nuxt dev/build outputs
-**/embed/webui
-**/*.db
-**/.output
-**/.data
-**/.nuxt
-**/.nitro
-**/.cache
-**/dist
+/frontend/dist
+/frontend/node_modules/
+/frontend/.nuxt/
 
-# Node dependencies
-**/node_modules
-
-# Logs
-**/logs
-**/*.log
+/backend/internal/db/
+/backend/internal/embed/webui/
 
 # Misc
 **/.DS_Store
 **/.fleet
 **/.idea
+**/*.db
 
-# Local env files
-**/.env
-**/.env.*
+.env
+.env.*
 !.env.example
-
-
