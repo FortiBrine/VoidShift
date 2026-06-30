@@ -2,25 +2,35 @@
 .git
 .gitignore
 
-# Node.js
-node_modules
-npm-debug.log
+# IDE
+.idea
+.vscode
 
-# Logs
-*.log
-
-# Environment
-.env
-.env.*
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode
-.idea
+# Environment (passed via docker compose / runtime)
+.env
+.env.*
+!.env.example
 
-# Build artifacts
-dist
-build
+# Local build artifacts
+app
+*.db
+
+# Frontend — excluded from Docker context; rebuilt inside container
+frontend/node_modules
+frontend/dist
+frontend/.output
+frontend/.nuxt
+
+# Backend — webui/dist is copied from the frontend stage inside the Dockerfile
+backend/internal/webui/dist
+
+# Docs / project meta (not needed in image)
+LICENSE
+NOTICE
+*.md
+Makefile
+compose.yml

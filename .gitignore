@@ -1,20 +1,24 @@
+# Frontend
+/frontend/node_modules
 /frontend/dist
-/frontend/node_modules/
-/frontend/.nuxt/
-/frontend/.output/
+/frontend/.nuxt
+/frontend/.output
 
+# Backend — sqlc-generated files (regenerated via make generate)
 /backend/internal/store/*
 !/backend/internal/store/database.go
 !/backend/internal/store/migrate.go
 !/backend/internal/store/sqlite.go
-/backend/internal/webui/dist/
+/backend/internal/webui/dist
+
+# Build output
+/app
 
 # Misc
-**/.DS_Store
-**/.fleet
-**/.idea
-**/*.db
+.DS_Store
+.fleet
+.idea
+*.db
 
-.env
-.env.*
+.env*
 !.env.example
