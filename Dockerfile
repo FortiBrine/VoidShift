@@ -15,7 +15,7 @@ RUN go mod download && go mod verify
 
 COPY backend/ ./
 
-COPY --from=frontend /app/frontend/.output/public ./internal/embed/webui
+COPY --from=frontend /app/frontend/.output/public ./internal/webui/dist
 
 RUN go tool sqlc generate
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-w -s" -o /app/app ./cmd/api

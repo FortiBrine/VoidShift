@@ -3,7 +3,7 @@ SHELL := /bin/sh
 FRONTEND_DIR := frontend
 BACKEND_DIR := backend
 FRONTEND_OUT := $(FRONTEND_DIR)/.output/public
-EMBED_DIR := $(BACKEND_DIR)/internal/embed/webui
+EMBED_DIR := $(BACKEND_DIR)/internal/webui/dist
 APP_OUT := app
 
 .PHONY: all frontend backend build clean deps generate

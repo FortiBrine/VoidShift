@@ -1,9 +1,10 @@
 /frontend/dist
 /frontend/node_modules/
 /frontend/.nuxt/
+/frontend/.output/
 
 /backend/internal/db/
-/backend/internal/embed/webui/
+/backend/internal/webui/dist/
 
 # Misc
 **/.DS_Store

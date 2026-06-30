@@ -13,19 +13,19 @@ type LoginRequestDto struct {
 	Password string `json:"password" validate:"required,min=8,max=40"`
 }
 
-type LoginHandler struct {
+type Handler struct {
 	authService *Service
 }
 
-func NewLoginHandler(
+func NewHandler(
 	authService *Service,
-) *LoginHandler {
-	return &LoginHandler{
+) *Handler {
+	return &Handler{
 		authService: authService,
 	}
 }
 
-func (h *LoginHandler) Login(c fiber.Ctx) error {
+func (h *Handler) Login(c fiber.Ctx) error {
 	req := new(LoginRequestDto)
 	if err := c.Bind().JSON(req); err != nil {
 		return err
@@ -56,7 +56,7 @@ func (h *LoginHandler) Login(c fiber.Ctx) error {
 	return c.SendStatus(http.StatusNoContent)
 }
 
-func (h *LoginHandler) Logout(c fiber.Ctx) error {
+func (h *Handler) Logout(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	if sess.Get("username") == nil {
 		return c.SendStatus(http.StatusUnauthorized)
