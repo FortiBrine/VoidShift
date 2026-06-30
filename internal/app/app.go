@@ -33,13 +33,17 @@ type App struct {
 func NewApp(
 	ctx context.Context, cfg config.Config,
 	l *slog.Logger,
-) (*App, error) {
+) (app *App, err error) {
 	db, err := store.Open(cfg)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := store.Migrate(ctx, db); err != nil {
+	defer func() {
+		if err != nil {
+			_ = db.Close()
+		}
+	}()
+	if err = store.Migrate(ctx, db); err != nil {
 		return nil, err
 	}
 
@@ -57,7 +61,7 @@ func NewApp(
 
 	userRepository := user.NewSqlcRepository(db)
 	userService := user.NewService(userRepository)
-	if err := userService.Load(ctx, cfg); err != nil {
+	if err = userService.Load(ctx, cfg); err != nil {
 		return nil, err
 	}
 
@@ -68,19 +72,23 @@ func NewApp(
 	if err != nil {
 		return nil, err
 	}
-	if err := wireGuardService.Load(); err != nil {
-		_ = wireGuardService.Close()
+	defer func() {
+		if err != nil {
+			_ = wireGuardService.Close()
+		}
+	}()
+	if err = wireGuardService.Load(); err != nil {
 		return nil, err
 	}
 
-	app := fiber.New(fiber.Config{
+	fiberApp := fiber.New(fiber.Config{
 		ErrorHandler:    middleware.NewCustomErrorHandler(l),
 		StructValidator: validator.NewCustomValidator(),
 		CaseSensitive:   true,
 		ProxyHeader:     fasthttp.HeaderXForwardedFor,
 	})
 
-	app.Hooks().OnListen(func(listenData fiber.ListenData) error {
+	fiberApp.Hooks().OnListen(func(listenData fiber.ListenData) error {
 		l.Info("Server is starting",
 			"host", listenData.Host,
 			"port", listenData.Port,
@@ -89,11 +97,11 @@ func NewApp(
 		return nil
 	})
 
-	middleware.Register(app, l, cfg, sessionConfig)
-	RegisterRoutes(app, authService, wireGuardService)
+	middleware.Register(fiberApp, l, cfg, sessionConfig)
+	RegisterRoutes(fiberApp, authService, wireGuardService)
 
 	return &App{
-		fiber:            app,
+		fiber:            fiberApp,
 		db:               db,
 		userService:      userService,
 		authService:      authService,
