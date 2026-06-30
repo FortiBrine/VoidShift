@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/FortiBrine/VoidShift/internal/db"
+	"github.com/FortiBrine/VoidShift/internal/store"
 )
 
 type Repository interface {
@@ -14,11 +14,11 @@ type Repository interface {
 }
 
 type SqlcRepository struct {
-	q *db.Queries
+	q *store.Queries
 }
 
 func NewSqlcRepository(database *sql.DB) *SqlcRepository {
-	return &SqlcRepository{q: db.New(database)}
+	return &SqlcRepository{q: store.New(database)}
 }
 
 func (r *SqlcRepository) CreateUser(ctx context.Context, user *User) error {
@@ -26,7 +26,7 @@ func (r *SqlcRepository) CreateUser(ctx context.Context, user *User) error {
 	if user.Admin {
 		admin = 1
 	}
-	return r.q.CreateUser(ctx, db.CreateUserParams{
+	return r.q.CreateUser(ctx, store.CreateUserParams{
 		Username:     user.Username,
 		PasswordHash: user.PasswordHash,
 		Admin:        admin,
@@ -49,7 +49,7 @@ func (r *SqlcRepository) GetByUsername(ctx context.Context, username string) (*U
 	return fromDB(row), nil
 }
 
-func fromDB(row db.User) *User {
+func fromDB(row store.User) *User {
 	return &User{
 		ID:           uint(row.ID),
 		Username:     row.Username,

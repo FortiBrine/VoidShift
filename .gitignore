@@ -5,11 +5,11 @@
 /frontend/.output
 
 # Backend — sqlc-generated files (regenerated via make generate)
-/backend/internal/store/*
-!/backend/internal/store/database.go
-!/backend/internal/store/migrate.go
-!/backend/internal/store/sqlite.go
-/backend/internal/webui/dist
+/internal/store/*
+!/internal/store/database.go
+!/internal/store/migrate.go
+!/internal/store/sqlite.go
+/internal/webui/dist
 
 # Build output
 /app

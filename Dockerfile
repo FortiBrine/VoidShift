@@ -8,12 +8,12 @@ COPY frontend/ ./
 RUN bun run generate
 
 FROM golang:1.26.1-alpine3.23 AS backend
-WORKDIR /app/backend
+WORKDIR /app
 
-COPY backend/go.mod backend/go.sum ./
+COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
-COPY backend/ ./
+COPY . .
 
 COPY --from=frontend /app/frontend/.output/public ./internal/webui/dist
 

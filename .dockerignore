@@ -19,14 +19,14 @@ Thumbs.db
 app
 *.db
 
-# Frontend — excluded from Docker context; rebuilt inside container
+# Frontend — exclude only build artifacts; source is needed for the frontend stage
 frontend/node_modules
 frontend/dist
 frontend/.output
 frontend/.nuxt
 
 # Backend — webui/dist is copied from the frontend stage inside the Dockerfile
-backend/internal/webui/dist
+internal/webui/dist
 
 # Docs / project meta (not needed in image)
 LICENSE

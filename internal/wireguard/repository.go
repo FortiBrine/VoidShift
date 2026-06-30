@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/FortiBrine/VoidShift/internal/db"
+	"github.com/FortiBrine/VoidShift/internal/store"
 )
 
 type Repository interface {
@@ -21,15 +21,15 @@ type Repository interface {
 
 type SqlcRepository struct {
 	db *sql.DB
-	q  *db.Queries
+	q  *store.Queries
 }
 
 func NewSqlcRepository(database *sql.DB) *SqlcRepository {
-	return &SqlcRepository{db: database, q: db.New(database)}
+	return &SqlcRepository{db: database, q: store.New(database)}
 }
 
 func (r *SqlcRepository) AddNetwork(ctx context.Context, network *Network) error {
-	row, err := r.q.CreateNetwork(ctx, db.CreateNetworkParams{
+	row, err := r.q.CreateNetwork(ctx, store.CreateNetworkParams{
 		Name:       network.Name,
 		Address:    network.Address,
 		ListenPort: int64(network.ListenPort),
@@ -48,8 +48,7 @@ func (r *SqlcRepository) GetNetwork(ctx context.Context, networkID uint) (*Netwo
 	if err != nil {
 		return nil, err
 	}
-	n := networkFromDB(row)
-	return &n, nil
+	return new(networkFromDB(row)), nil
 }
 
 func (r *SqlcRepository) GetNetworkWithPeers(ctx context.Context, networkID uint) (*Network, error) {
@@ -113,8 +112,8 @@ func (r *SqlcRepository) AddPeer(ctx context.Context, peer *Peer) error {
 	}
 	defer tx.Rollback()
 
-	q := db.New(tx)
-	row, err := q.CreatePeer(ctx, db.CreatePeerParams{
+	q := store.New(tx)
+	row, err := q.CreatePeer(ctx, store.CreatePeerParams{
 		NetworkID:    int64(peer.NetworkID),
 		PublicKey:    peer.PublicKey,
 		PrivateKey:   peer.PrivateKey,
@@ -125,7 +124,7 @@ func (r *SqlcRepository) AddPeer(ctx context.Context, peer *Peer) error {
 	}
 
 	for _, ip := range peer.AllowedIPs {
-		if err := q.InsertPeerAllowedIP(ctx, db.InsertPeerAllowedIPParams{
+		if err := q.InsertPeerAllowedIP(ctx, store.InsertPeerAllowedIPParams{
 			PeerID: row.ID,
 			Ip:     ip,
 		}); err != nil {
@@ -144,7 +143,7 @@ func (r *SqlcRepository) RemovePeer(ctx context.Context, peerID uint) error {
 	}
 	defer tx.Rollback()
 
-	q := db.New(tx)
+	q := store.New(tx)
 	if err := q.DeletePeerAllowedIPs(ctx, int64(peerID)); err != nil {
 		return err
 	}
@@ -161,7 +160,7 @@ func (r *SqlcRepository) RemoveNetwork(ctx context.Context, networkID uint) erro
 	}
 	defer tx.Rollback()
 
-	q := db.New(tx)
+	q := store.New(tx)
 	if err := q.DeleteAllowedIPsByNetworkID(ctx, int64(networkID)); err != nil {
 		return err
 	}
@@ -174,7 +173,7 @@ func (r *SqlcRepository) RemoveNetwork(ctx context.Context, networkID uint) erro
 	return tx.Commit()
 }
 
-func networkFromDB(row db.Network) Network {
+func networkFromDB(row store.Network) Network {
 	return Network{
 		ID:         uint(row.ID),
 		Name:       row.Name,
@@ -185,7 +184,7 @@ func networkFromDB(row db.Network) Network {
 	}
 }
 
-func peerFromDB(row db.Peer, ips []string) Peer {
+func peerFromDB(row store.Peer, ips []string) Peer {
 	if ips == nil {
 		ips = []string{}
 	}
