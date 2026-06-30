@@ -1,4 +1,4 @@
-package database
+package store
 
 import (
 	"database/sql"
@@ -12,6 +12,6 @@ func Open(cfg config.Config) (*sql.DB, error) {
 	case cfg.SqliteDatabasePath != "":
 		return NewSqliteDatabase(cfg)
 	default:
-		return nil, errors.New("no database configured")
+		return nil, errors.New("no store configured")
 	}
 }

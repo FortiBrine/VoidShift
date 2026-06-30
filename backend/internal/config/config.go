@@ -18,7 +18,7 @@ func (e Environment) IsDev() bool { return e == EnvDev }
 
 type Config struct {
 	Environment        Environment `env:"ENVIRONMENT" envDefault:"dev"`
-	SqliteDatabasePath string      `env:"SQLITE_DATABASE_PATH" envDefault:"./database.db"`
+	SqliteDatabasePath string      `env:"SQLITE_DATABASE_PATH" envDefault:"./store.db"`
 
 	HostAddress     string        `env:"HOST_ADDRESS" envDefault:"1.2.3.4"`
 	GracefulTimeout time.Duration `env:"GRACEFUL_TIMEOUT" envDefault:"5s"`

@@ -10,12 +10,10 @@ import (
 
 	"github.com/FortiBrine/VoidShift/internal/auth"
 	"github.com/FortiBrine/VoidShift/internal/config"
-	"github.com/FortiBrine/VoidShift/internal/database"
-	apphttp "github.com/FortiBrine/VoidShift/internal/http"
-	"github.com/FortiBrine/VoidShift/internal/http/middleware"
-	"github.com/FortiBrine/VoidShift/internal/http/router"
-	"github.com/FortiBrine/VoidShift/internal/http/validator"
+	"github.com/FortiBrine/VoidShift/internal/middleware"
+	"github.com/FortiBrine/VoidShift/internal/store"
 	"github.com/FortiBrine/VoidShift/internal/user"
+	"github.com/FortiBrine/VoidShift/internal/validator"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/extractors"
@@ -36,12 +34,12 @@ func NewApp(
 	ctx context.Context, cfg config.Config,
 	l *slog.Logger,
 ) (*App, error) {
-	db, err := database.Open(cfg)
+	db, err := store.Open(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := database.Migrate(ctx, db); err != nil {
+	if err := store.Migrate(ctx, db); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +74,7 @@ func NewApp(
 	}
 
 	app := fiber.New(fiber.Config{
-		ErrorHandler:    apphttp.NewCustomErrorHandler(l),
+		ErrorHandler:    middleware.NewCustomErrorHandler(l),
 		StructValidator: validator.NewCustomValidator(),
 		CaseSensitive:   true,
 		ProxyHeader:     fasthttp.HeaderXForwardedFor,
@@ -92,7 +90,7 @@ func NewApp(
 	})
 
 	middleware.Register(app, l, cfg, sessionConfig)
-	router.RegisterRoutes(app, authService, wireGuardService)
+	RegisterRoutes(app, authService, wireGuardService)
 
 	return &App{
 		fiber:            app,

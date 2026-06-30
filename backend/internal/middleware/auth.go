@@ -7,15 +7,15 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/session"
 )
 
-type Config struct {
+type AuthConfig struct {
 	Next func(c fiber.Ctx) bool
 }
 
-var ConfigDefault = Config{
+var ConfigDefault = AuthConfig{
 	Next: nil,
 }
 
-func configDefault(config ...Config) Config {
+func configDefault(config ...AuthConfig) AuthConfig {
 	if len(config) < 1 {
 		return ConfigDefault
 	}
@@ -25,7 +25,7 @@ func configDefault(config ...Config) Config {
 	return cfg
 }
 
-func New(config ...Config) fiber.Handler {
+func NewAuth(config ...AuthConfig) fiber.Handler {
 	cfg := configDefault(config...)
 
 	return func(c fiber.Ctx) error {

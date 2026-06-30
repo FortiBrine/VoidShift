@@ -3,7 +3,10 @@
 /frontend/.nuxt/
 /frontend/.output/
 
-/backend/internal/db/
+/backend/internal/store/*
+!/backend/internal/store/database.go
+!/backend/internal/store/migrate.go
+!/backend/internal/store/sqlite.go
 /backend/internal/webui/dist/
 
 # Misc

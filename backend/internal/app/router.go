@@ -1,9 +1,8 @@
-package router
+package app
 
 import (
 	"github.com/FortiBrine/VoidShift/internal/auth"
-	"github.com/FortiBrine/VoidShift/internal/auth/middleware"
-	"github.com/FortiBrine/VoidShift/internal/http/handlers"
+	"github.com/FortiBrine/VoidShift/internal/middleware"
 	"github.com/FortiBrine/VoidShift/internal/webui"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/gofiber/fiber/v3"
@@ -16,12 +15,12 @@ func RegisterRoutes(
 	wireGuardService *wireguard.Service,
 ) {
 	api := app.Group("/api")
-	api.Get("/health", handlers.Health)
+	api.Get("/health", Health)
 
 	auth.RegisterRoutes(app.Group("/auth"), authService)
 	wireguard.RegisterRoutes(
 		app.Group("/vpn/wireguard").
-			Use(middleware.New()),
+			Use(middleware.NewAuth()),
 		wireGuardService,
 	)
 

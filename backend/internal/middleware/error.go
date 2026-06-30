@@ -1,11 +1,11 @@
-package http
+package middleware
 
 import (
 	"errors"
 	"log/slog"
 	"net/http"
 
-	"github.com/FortiBrine/VoidShift/internal/http/validator"
+	"github.com/FortiBrine/VoidShift/internal/validator"
 	"github.com/gofiber/fiber/v3"
 )
 
