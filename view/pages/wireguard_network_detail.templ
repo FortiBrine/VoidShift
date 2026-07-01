@@ -111,7 +111,7 @@ templ NetworkDetail(network *wireguard.Network) {
 											Конфіг
 										}
 										@button.Button(button.Props{
-											Href:    fmt.Sprintf("/vpn/wireguard/peers/%d/config/download", peer.ID),
+											Href:    fmt.Sprintf("/api/vpn/wireguard/peers/%d/config/download", peer.ID),
 											Variant: button.VariantOutline,
 											Size:    button.SizeSm,
 										}) {

@@ -1,46 +1,36 @@
-<div align="right">
-
-🌐 **English** | [Українська](README.ua.md)
-
-</div>
-
 <div align="center">
 
 # VoidShift
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](compose.yml)
-![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20FreeBSD-orange)
+[![License](https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-blue.svg)](#license)
+![Platform](https://img.shields.io/badge/platform-Linux-orange)
 
-VPN management panel for VPS servers. Single binary with an embedded web UI.
+VPN management panel for VPS servers. Single binary with an embedded, server-rendered web UI.
 Currently supports WireGuard, with more protocols planned.
 
 </div>
 
 ---
 
-### ✨ Features
+### Features
 
-- 🔒 **WireGuard management** — create networks, bring interfaces up/down, add and remove peers
-- 📱 **Peer configs and QR codes** — download `.conf` files or scan a QR code directly from the UI
-- 📦 **Single binary** — the frontend is embedded into the Go binary at build time, one file to deploy
-- 🗄️ **Dual database** — SQLite out of the box (zero config), or MySQL via DSN
-- 🔑 **Session-based auth** — bootstrap admin credentials via environment variables
-- 🐳 **Docker-ready** — `docker compose up` and you're running
-
----
-
-### 🖥️ Supported Operating Systems
-
-- ✅ **Linux** — fully supported
-- 🔜 **FreeBSD** — planned
-- ❌ **macOS** — not supported (WireGuard kernel APIs unavailable)
-- ❌ **Windows** — not supported (WireGuard kernel APIs unavailable)
+- **WireGuard management**: create networks, bring interfaces up or down, add and remove peers
+- **Peer configs and QR codes**: download `.conf` files or scan a QR code directly from the UI
+- **Single binary**: the web UI (templ + Tailwind, server-rendered) is embedded into the Go binary at build time, one file to deploy
+- **Session-based auth**: bootstrap admin credentials via environment variables
+- **Docker-ready**: `docker compose up` and it's running
 
 ---
 
-### 🚀 Quick Start
+### Supported operating systems
+
+Linux only. The WireGuard control plane uses `netlink` and `wgctrl`, both of which depend on Linux kernel APIs; the binary hard-fails to build or run on any other `GOOS`.
+
+---
+
+### Quick start
 
 #### Docker (recommended)
 
@@ -54,53 +44,45 @@ Open [http://localhost:8080](http://localhost:8080) and log in with your admin c
 
 > All required capabilities (`NET_ADMIN`, `/dev/net/tun`, `net.ipv4.ip_forward`) are pre-configured in `compose.yml`.
 
-#### Manual Build
+#### Manual build
 
 ```sh
 cp .env.example .env
 # Edit .env
 
-make deps     # install frontend and backend dependencies
-make build    # build frontend, then embed it into the Go binary
+go mod download
+bun install
+
+go tool sqlc generate                                                      # generate internal/store from db/queries + db/migrations
+go tool templ generate                                                     # generate view/**/*_templ.go from *.templ files
+bunx @tailwindcss/cli -i assets/app.css -o internal/webui/static/app.css   # build CSS embedded into the binary
+
+go build -o app ./cmd/api
 
 sudo ./app    # NET_ADMIN privileges required for WireGuard
 ```
 
-<details>
-<summary>Other make targets</summary>
+---
 
-| Command | Description |
-|---|---|
-| `make deps` | `bun install` + `go mod download` |
-| `make frontend` | Generate static SPA to `frontend/.output/public/` |
-| `make backend` | Copy frontend output into embed dir, compile Go binary |
-| `make build` | Full build: frontend + backend |
-| `make clean` | Remove build artifacts |
+### Configuration
 
-</details>
+All configuration is via environment variables (loaded from `.env` if present). Copy `.env.example` to `.env`:
+
+| Variable | Default | Description |
+|---|---|---|
+| `SQLITE_DATABASE_PATH` | `./store.db` | Path to the SQLite database file |
+| `HOST_ADDRESS` | `1.2.3.4` | Public IP of this server, embedded in generated peer configs |
+| `HTTP_ADDRESS` | `:8080` | HTTP listen address |
+| `GRACEFUL_TIMEOUT` | `5s` | Graceful shutdown timeout |
+| `ADMIN_USERNAME` | `admin` | Bootstrap admin username (upserted on every boot) |
+| `ADMIN_PASSWORD` | `password` | Bootstrap admin password (upserted on every boot) |
+| `ENVIRONMENT` | `dev` | Set to `prod` to disable debug logging and enforce the session cookie's `Secure` flag |
 
 ---
 
-### ⚙️ Configuration
+### API reference
 
-All configuration is via environment variables. Copy `.env.example` to `.env`:
-
-| Variable | Default | Required | Description |
-|---|---|---|---|
-| `SQLITE_DATABASE_PATH` | | One of these two | Path to SQLite file (e.g. `./database.db`) |
-| `MYSQL_DSN` | | One of these two | MySQL DSN; if set, MySQL is used instead of SQLite |
-| `HOST_ADDRESS` | | Yes | Public IP of this server, used in generated peer configs |
-| `ADMIN_USERNAME` | | Yes | Bootstrap admin username |
-| `ADMIN_PASSWORD` | | Yes | Bootstrap admin password |
-| `HTTP_ADDRESS` | `:8080` | No | HTTP listen address |
-| `GRACEFUL_TIMEOUT` | `5s` | No | Graceful shutdown timeout |
-| `ENVIRONMENT` | | No | Set to `dev` for development logging |
-
----
-
-### 📡 API Reference
-
-All routes are under `/api`. Protected routes require an active session cookie.
+The JSON API lives under `/api`. The web UI itself is server-rendered separately (`/`, `/login`, `/wireguard/...`) and isn't part of this API. Protected routes require an active session cookie.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
@@ -116,32 +98,46 @@ All routes are under `/api`. Protected routes require an active session cookie.
 | `POST` | `/api/vpn/wireguard/networks/:id/peers/generate` | Yes | Add peer to network |
 | `GET` | `/api/vpn/wireguard/peers/:peerId/config` | Yes | Get peer config text |
 | `GET` | `/api/vpn/wireguard/peers/:peerId/config/download` | Yes | Download peer `.conf` file |
-| `GET` | `/api/vpn/wireguard/peers/:peerId/qr` | Yes | Get peer config as QR code |
+| `GET` | `/api/vpn/wireguard/peers/:peerId/qr` | Yes | Get peer config as a QR code image |
 | `DELETE` | `/api/vpn/wireguard/peers/:peerId` | Yes | Remove peer |
 
 ---
 
-### 📦 Project Structure
+### Project structure
 
 ```
-backend/               # Go module root (go.mod lives here)
-  cmd/api/             # Binary entrypoint
-  internal/
-    app/               # Application wiring
-    auth/              # Auth handler, service, middleware
-    session/           # Session management (GORM-backed, 5-day TTL)
-    user/              # User model, repository, service
-    wireguard/         # WireGuard networks and peers
-    shared/            # Config, database, HTTP plumbing, logger, validator
-    embed/webui/       # Embedded frontend (auto-generated, do not edit)
-frontend/              # Nuxt 4 SPA (SSR disabled, built with Bun)
-  app/pages/           # Route pages
-  i18n/                # Localisation files
+cmd/api/                 # Binary entrypoint (main.go)
+internal/
+  app/                   # Application wiring, route registration
+  auth/                  # Auth handler, service, JSON API routes
+  user/                  # Bootstrap admin user, repository, service
+  wireguard/             # WireGuard networks/peers: netlink + wgctrl, JSON API routes
+  webui/                 # Server-rendered UI routes/handlers, embedded static assets
+  config/                # Environment-variable configuration
+  middleware/            # Auth, error handling
+  store/                 # sqlc-generated DB layer + goose migration runner
+  validator/             # go-playground/validator adapter for Fiber
+  logger/                # slog setup
+view/
+  pages/                 # templ page templates
+  layouts/               # templ layout templates
+  components/ui/         # vendored templui component set
+db/
+  migrations/            # goose SQL migrations
+  queries/               # sqlc input queries
+assets/app.css           # Tailwind v4 source (built to internal/webui/static/app.css)
 ```
 
 ---
 
-### 📄 License
+### Roadmap
 
-VoidShift is licensed under the [Apache License 2.0](LICENSE).
-See [THIRD_PARTY_LIBRARIES.md](THIRD_PARTY_LIBRARIES.md) for open-source dependencies used in this project.
+- MySQL as an alternative to SQLite
+- FreeBSD support
+- Additional VPN protocols beyond WireGuard
+
+---
+
+### License
+
+VoidShift is dual-licensed under [MIT](LICENSE-MIT) or [Apache License 2.0](LICENSE-APACHE), at your option.

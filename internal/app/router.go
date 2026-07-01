@@ -16,9 +16,9 @@ func RegisterRoutes(
 	api := app.Group("/api")
 	api.Get("/health", Health)
 
-	auth.RegisterRoutes(app.Group("/auth"), authService)
+	auth.RegisterRoutes(api.Group("/auth"), authService)
 	wireguard.RegisterRoutes(
-		app.Group("/vpn/wireguard").
+		api.Group("/vpn/wireguard").
 			Use(middleware.NewAuth()),
 		wireGuardService,
 	)

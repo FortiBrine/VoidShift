@@ -25,7 +25,7 @@ templ PeerQR(peerID uint, networkID uint) {
 			}
 			@card.Content(card.ContentProps{Class: "flex justify-center"}) {
 				<img
-					src={ fmt.Sprintf("/vpn/wireguard/peers/%d/qr", peerID) }
+					src={ fmt.Sprintf("/api/vpn/wireguard/peers/%d/qr", peerID) }
 					alt="Peer QR code"
 					class="w-full max-w-[460px]"
 				/>

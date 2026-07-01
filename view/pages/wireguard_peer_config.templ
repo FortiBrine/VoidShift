@@ -25,7 +25,7 @@ templ PeerConfig(peerID uint, networkID uint, config string) {
 				Назад
 			}
 			@button.Button(button.Props{
-				Href:    fmt.Sprintf("/vpn/wireguard/peers/%d/config/download", peerID),
+				Href:    fmt.Sprintf("/api/vpn/wireguard/peers/%d/config/download", peerID),
 				Variant: button.VariantOutline,
 			}) {
 				@icon.Download(icon.Props{Class: "size-4"})

@@ -1,15 +1,12 @@
 # Frontend
-/frontend/node_modules
-/frontend/dist
-/frontend/.nuxt
-/frontend/.output
+/node_modules
+/internal/webui/static/*
 
-# Backend — sqlc-generated files (regenerated via make generate)
+# Backend — sqlc-generated files (regenerated during build)
 /internal/store/*
 !/internal/store/database.go
 !/internal/store/migrate.go
 !/internal/store/sqlite.go
-/internal/webui/dist
 /view/**/*_templ.go
 
 # Build output
@@ -20,11 +17,13 @@
 .fleet
 .idea
 *.db
+frontend.oldnuxt
 
 .env*
 !.env.example
 
-LICENSE
+LICENSE-MIT
+LICENSE-APACHE
 NOTICE
 *.md
 Makefile
