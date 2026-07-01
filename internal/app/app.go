@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -36,7 +37,7 @@ func NewApp(
 ) (app *App, err error) {
 	db, err := store.Open(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -44,7 +45,7 @@ func NewApp(
 		}
 	}()
 	if err = store.Migrate(ctx, db); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
 	sessionConfig := session.Config{
@@ -62,7 +63,7 @@ func NewApp(
 	userRepository := user.NewSqlcRepository(db)
 	userService := user.NewService(userRepository)
 	if err = userService.Load(ctx, cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load user service: %w", err)
 	}
 
 	authService := auth.NewService(userService)
@@ -70,7 +71,7 @@ func NewApp(
 	wireGuardRepository := wireguard.NewSqlcRepository(db)
 	wireGuardService, err := wireguard.NewService(wireGuardRepository, cfg.HostAddress)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create wireguard service: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -78,7 +79,7 @@ func NewApp(
 		}
 	}()
 	if err = wireGuardService.Load(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to load wireguard service: %w", err)
 	}
 
 	fiberApp := fiber.New(fiber.Config{
@@ -100,13 +101,14 @@ func NewApp(
 	middleware.Register(fiberApp, l, cfg, sessionConfig)
 	RegisterRoutes(fiberApp, authService, wireGuardService)
 
-	return &App{
+	app = new(App{
 		fiber:            fiberApp,
 		db:               db,
 		userService:      userService,
 		authService:      authService,
 		wireGuardService: wireGuardService,
-	}, nil
+	})
+	return
 }
 
 func (app *App) Start(ctx context.Context, cfg config.Config) error {
@@ -115,7 +117,7 @@ func (app *App) Start(ctx context.Context, cfg config.Config) error {
 		ShutdownTimeout:       cfg.GracefulTimeout,
 		DisableStartupMessage: true,
 	}); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
+		return fmt.Errorf("failed to start fiber app: %w", err)
 	}
 	return nil
 }
@@ -123,11 +125,13 @@ func (app *App) Start(ctx context.Context, cfg config.Config) error {
 func (app *App) Close() error {
 	if app.wireGuardService != nil {
 		if err := app.wireGuardService.Close(); err != nil {
-			return err
+			return fmt.Errorf("failed to close wireguard service: %w", err)
 		}
 	}
 	if app.db != nil {
-		return app.db.Close()
+		if err := app.db.Close(); err != nil {
+			return fmt.Errorf("failed to close database: %w", err)
+		}
 	}
 	return nil
 }

@@ -3,7 +3,6 @@ package wireguard
 import (
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -44,7 +43,7 @@ func (h *Handler) GetNetworks(c fiber.Ctx) error {
 		}
 	}
 
-	return c.Status(http.StatusOK).JSON(map[string]interface{}{
+	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
 		"networks": networksResult,
 	})
 }
@@ -61,7 +60,7 @@ func (h *Handler) GenerateNetwork(c fiber.Ctx) error {
 		return fmt.Errorf("failed to generate network: %w", err)
 	}
 
-	return c.Status(http.StatusCreated).JSON(map[string]interface{}{
+	return c.Status(fiber.StatusCreated).JSON(map[string]any{
 		"id":          network.ID,
 		"public_key":  network.PublicKey,
 		"address":     network.Address,
@@ -75,7 +74,7 @@ func (h *Handler) GetNetwork(c fiber.Ctx) error {
 
 	network, err := h.service.GetNetworkWithPeers(ctx, networkID)
 	if errors.Is(err, ErrNetworkNotFound) {
-		return c.SendStatus(http.StatusNotFound)
+		return c.SendStatus(fiber.StatusNotFound)
 	}
 	if err != nil {
 		return err
@@ -90,7 +89,7 @@ func (h *Handler) GetNetwork(c fiber.Ctx) error {
 		}
 	}
 
-	return c.Status(http.StatusOK).JSON(map[string]any{
+	return c.Status(fiber.StatusOK).JSON(map[string]any{
 		"id":          network.ID,
 		"public_key":  network.PublicKey,
 		"address":     network.Address,
@@ -107,12 +106,12 @@ func (h *Handler) RemoveNetwork(c fiber.Ctx) error {
 
 	if err := h.service.RemoveNetwork(ctx, networkID); err != nil {
 		if errors.Is(err, ErrNetworkNotFound) {
-			return c.SendStatus(http.StatusNotFound)
+			return c.SendStatus(fiber.StatusNotFound)
 		}
 		return err
 	}
 
-	return c.SendStatus(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *Handler) UpNetwork(c fiber.Ctx) error {
@@ -121,12 +120,12 @@ func (h *Handler) UpNetwork(c fiber.Ctx) error {
 
 	if err := h.service.UpNetwork(ctx, networkID); err != nil {
 		if errors.Is(err, ErrNetworkNotFound) {
-			return c.SendStatus(http.StatusNotFound)
+			return c.SendStatus(fiber.StatusNotFound)
 		}
 		return err
 	}
 
-	return c.SendStatus(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *Handler) DownNetwork(c fiber.Ctx) error {
@@ -135,12 +134,12 @@ func (h *Handler) DownNetwork(c fiber.Ctx) error {
 
 	if err := h.service.DownNetwork(ctx, networkID); err != nil {
 		if errors.Is(err, ErrNetworkNotFound) {
-			return c.SendStatus(http.StatusNotFound)
+			return c.SendStatus(fiber.StatusNotFound)
 		}
 		return err
 	}
 
-	return c.SendStatus(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *Handler) GeneratePeer(c fiber.Ctx) error {
@@ -157,7 +156,7 @@ func (h *Handler) GeneratePeer(c fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(http.StatusCreated).JSON(map[string]any{
+	return c.Status(fiber.StatusCreated).JSON(map[string]any{
 		"id":         peer.ID,
 		"public_key": peer.PublicKey,
 	})
@@ -169,12 +168,12 @@ func (h *Handler) RemovePeer(c fiber.Ctx) error {
 
 	if err := h.service.RemovePeer(ctx, peerID); err != nil {
 		if errors.Is(err, ErrPeerNotFound) {
-			return c.SendStatus(http.StatusNotFound)
+			return c.SendStatus(fiber.StatusNotFound)
 		}
 		return err
 	}
 
-	return c.SendStatus(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *Handler) GetPeerConfig(c fiber.Ctx) error {
@@ -184,12 +183,12 @@ func (h *Handler) GetPeerConfig(c fiber.Ctx) error {
 	config, err := h.service.GetPeerConfig(ctx, peerID)
 	if err != nil {
 		if errors.Is(err, ErrPeerNotFound) {
-			return c.SendStatus(http.StatusNotFound)
+			return c.SendStatus(fiber.StatusNotFound)
 		}
 		return err
 	}
 
-	return c.Status(http.StatusOK).SendString(config)
+	return c.Status(fiber.StatusOK).SendString(config)
 }
 
 func (h *Handler) DownloadPeerConfig(c fiber.Ctx) error {
@@ -199,13 +198,13 @@ func (h *Handler) DownloadPeerConfig(c fiber.Ctx) error {
 	config, err := h.service.GetPeerConfig(ctx, peerID)
 	if err != nil {
 		if errors.Is(err, ErrPeerNotFound) {
-			return c.SendStatus(http.StatusNotFound)
+			return c.SendStatus(fiber.StatusNotFound)
 		}
 		return err
 	}
 
 	c.Response().Header.Set(fiber.HeaderContentDisposition, fmt.Sprintf("attachment; filename=\"peer-%d.conf\"", peerID))
-	return c.Status(http.StatusOK).SendString(config)
+	return c.Status(fiber.StatusOK).SendString(config)
 }
 
 func (h *Handler) GetPeerConfigQR(c fiber.Ctx) error {
@@ -215,11 +214,12 @@ func (h *Handler) GetPeerConfigQR(c fiber.Ctx) error {
 	qrCode, err := h.service.GetPeerConfigQR(ctx, peerID)
 	if err != nil {
 		if errors.Is(err, ErrPeerNotFound) {
-			return c.SendStatus(http.StatusNotFound)
+			return c.SendStatus(fiber.StatusNotFound)
 		}
 		return err
 	}
 
-	c.Type("png")
-	return c.Send(qrCode)
+	return c.Status(fiber.StatusOK).
+		Type("png").
+		Send(qrCode)
 }

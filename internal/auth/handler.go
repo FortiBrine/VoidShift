@@ -2,7 +2,6 @@ package auth
 
 import (
 	"errors"
-	"net/http"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/session"
@@ -33,7 +32,7 @@ func (h *Handler) Login(c fiber.Ctx) error {
 
 	sess := session.FromContext(c)
 	if sess.Get("username") != nil {
-		return c.SendStatus(http.StatusConflict)
+		return c.SendStatus(fiber.StatusConflict)
 	}
 
 	err := h.authService.Login(
@@ -45,7 +44,7 @@ func (h *Handler) Login(c fiber.Ctx) error {
 	)
 
 	if errors.Is(err, ErrWrongPassword) || errors.Is(err, ErrUserNotFound) {
-		return c.SendStatus(http.StatusUnauthorized)
+		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 	if err != nil {
 		return err
@@ -53,15 +52,15 @@ func (h *Handler) Login(c fiber.Ctx) error {
 
 	sess.Set("username", req.Username)
 
-	return c.SendStatus(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }
 
 func (h *Handler) Logout(c fiber.Ctx) error {
 	sess := session.FromContext(c)
 	if sess.Get("username") == nil {
-		return c.SendStatus(http.StatusUnauthorized)
+		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 	sess.Delete("username")
 
-	return c.SendStatus(http.StatusNoContent)
+	return c.SendStatus(fiber.StatusNoContent)
 }

@@ -1,34 +1,29 @@
-# Git
-.git
-.gitignore
+# Frontend
+/frontend/node_modules
+/frontend/dist
+/frontend/.nuxt
+/frontend/.output
 
-# IDE
-.idea
-.vscode
+# Backend — sqlc-generated files (regenerated via make generate)
+/internal/store/*
+!/internal/store/database.go
+!/internal/store/migrate.go
+!/internal/store/sqlite.go
+/internal/webui/dist
+/view/**/*_templ.go
 
-# OS
+# Build output
+/app
+
+# Misc
 .DS_Store
-Thumbs.db
-
-# Environment (passed via docker compose / runtime)
-.env
-.env.*
-!.env.example
-
-# Local build artifacts
-app
+.fleet
+.idea
 *.db
 
-# Frontend — exclude only build artifacts; source is needed for the frontend stage
-frontend/node_modules
-frontend/dist
-frontend/.output
-frontend/.nuxt
+.env*
+!.env.example
 
-# Backend — webui/dist is copied from the frontend stage inside the Dockerfile
-internal/webui/dist
-
-# Docs / project meta (not needed in image)
 LICENSE
 NOTICE
 *.md

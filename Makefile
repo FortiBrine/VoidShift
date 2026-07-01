@@ -30,5 +30,8 @@ backend: frontend generate
 
 clean:
 	rm -rf $(FRONTEND_DIR)/.output
+	rm -rf $(FRONTEND_DIR)/.nuxt
 	rm -rf $(EMBED_DIR)
 	rm -f $(APP_OUT)
+	rm -f internal/store/db.go internal/store/models.go internal/store/*.sql.go
+	find view -name '*_templ.go' -delete

@@ -8,6 +8,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const bcryptCost = 12
+
 type Service struct {
 	repository Repository
 }
@@ -18,12 +20,12 @@ func NewService(repository Repository) *Service {
 
 func (s *Service) Load(ctx context.Context, cfg config.Config) error {
 	if cfg.AdminUsername != "" && cfg.AdminPassword != "" {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcrypt.DefaultCost)
+		hashed, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcryptCost)
 		if err != nil {
 			return fmt.Errorf("failed to hash admin password: %w", err)
 		}
 
-		if err := s.CreateUser(ctx, &User{
+		if err = s.CreateUser(ctx, &User{
 			Username:     cfg.AdminUsername,
 			PasswordHash: string(hashed),
 			Admin:        true,

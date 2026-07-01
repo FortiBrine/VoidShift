@@ -6,7 +6,6 @@ import (
 	"github.com/FortiBrine/VoidShift/internal/webui"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/static"
 )
 
 func RegisterRoutes(
@@ -24,11 +23,5 @@ func RegisterRoutes(
 		wireGuardService,
 	)
 
-	app.Get("/", static.New("", static.Config{
-		FS: webui.FS,
-	}))
-
-	app.Get("/*", func(c fiber.Ctx) error {
-		return c.SendFile("/index.html")
-	})
+	webui.RegisterRoutes(app)
 }

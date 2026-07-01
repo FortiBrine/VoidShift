@@ -38,10 +38,10 @@ func (s *Service) Login(
 		if errors.Is(err, sql.ErrNoRows) {
 			return ErrUserNotFound
 		}
-		return fmt.Errorf("get user by username: %w", err)
+		return fmt.Errorf("failed to get user by username: %w", err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
+	if err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {
 		return ErrWrongPassword
 	}
 

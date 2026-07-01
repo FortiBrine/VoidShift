@@ -32,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer func(a *app.App) {
-		if err := a.Close(); err != nil {
+		if err = a.Close(); err != nil {
 			l.Error("error closing app", "error", err)
 		}
 	}(a)
