@@ -8,11 +8,15 @@ import (
 )
 
 type AuthConfig struct {
-	Next func(c fiber.Ctx) bool
+	Next         func(c fiber.Ctx) bool
+	Unauthorized func(c fiber.Ctx) error
 }
 
 var ConfigDefault = AuthConfig{
 	Next: nil,
+	Unauthorized: func(c fiber.Ctx) error {
+		return c.SendStatus(http.StatusUnauthorized)
+	},
 }
 
 func configDefault(config ...AuthConfig) AuthConfig {
@@ -21,6 +25,9 @@ func configDefault(config ...AuthConfig) AuthConfig {
 	}
 
 	cfg := config[0]
+	if cfg.Unauthorized == nil {
+		cfg.Unauthorized = ConfigDefault.Unauthorized
+	}
 
 	return cfg
 }
@@ -35,7 +42,7 @@ func NewAuth(config ...AuthConfig) fiber.Handler {
 
 		sess := session.FromContext(c)
 		if sess.Get("username") == nil {
-			return c.SendStatus(http.StatusUnauthorized)
+			return cfg.Unauthorized(c)
 		}
 
 		return c.Next()

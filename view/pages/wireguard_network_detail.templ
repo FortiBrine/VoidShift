@@ -1,0 +1,136 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/FortiBrine/VoidShift/internal/wireguard"
+	"github.com/FortiBrine/VoidShift/view/components/ui/badge"
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
+	"github.com/FortiBrine/VoidShift/view/components/ui/table"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
+templ NetworkDetail(network *wireguard.Network) {
+	@layouts.App(fmt.Sprintf("Мережа #%d", network.ID), "wireguard") {
+		<div class="mb-6 flex items-center justify-between">
+			@button.Button(button.Props{Href: "/wireguard", Variant: button.VariantGhost}) {
+				@icon.ArrowLeft(icon.Props{Class: "size-4"})
+				До списку мереж
+			}
+			<div class="flex gap-2">
+				<form method="post" action={ templ.SafeURL(fmt.Sprintf("/wireguard/networks/%d/up", network.ID)) }>
+					@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline}) {
+						@icon.CirclePlay(icon.Props{Class: "size-4"})
+						Up
+					}
+				</form>
+				<form method="post" action={ templ.SafeURL(fmt.Sprintf("/wireguard/networks/%d/down", network.ID)) }>
+					@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline}) {
+						@icon.CirclePause(icon.Props{Class: "size-4"})
+						Down
+					}
+				</form>
+			</div>
+		</div>
+		@card.Card(card.Props{Class: "mb-6"}) {
+			@card.Header() {
+				@card.Title() {
+					{ fmt.Sprintf("Мережа #%d", network.ID) }
+				}
+			}
+			@card.Content() {
+				<dl class="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
+					<div>
+						<dt class="text-muted-foreground">CIDR</dt>
+						<dd>{ network.Address }</dd>
+					</div>
+					<div>
+						<dt class="text-muted-foreground">Порт</dt>
+						<dd>{ fmt.Sprintf("%d", network.ListenPort) }</dd>
+					</div>
+					<div class="md:col-span-2">
+						<dt class="text-muted-foreground">Public key</dt>
+						<dd class="break-all font-mono text-xs">{ network.PublicKey }</dd>
+					</div>
+				</dl>
+			}
+		}
+		@card.Card() {
+			@card.Header(card.HeaderProps{Class: "flex flex-row items-center justify-between"}) {
+				@card.Title() {
+					Peer-и
+				}
+				@button.Button(button.Props{Href: fmt.Sprintf("/wireguard/networks/%d/peers/create", network.ID)}) {
+					@icon.Plus(icon.Props{Class: "size-4"})
+					Додати peer
+				}
+			}
+			if len(network.Peers) == 0 {
+				@card.Content() {
+					<p class="py-10 text-center text-sm text-muted-foreground">Peer-ів поки немає.</p>
+				}
+			} else {
+				@card.Content() {
+					@table.Table() {
+						@table.Header() {
+							@table.Row() {
+								@table.Head() {
+									Peer
+								}
+								@table.Head() {
+									Allowed IPs
+								}
+								@table.Head(table.HeadProps{Class: "text-right"}) {
+								}
+							}
+						}
+						@table.Body() {
+							for _, peer := range network.Peers {
+								@table.Row() {
+									@table.Cell() {
+										<span class="font-medium">{ fmt.Sprintf("Peer #%d", peer.ID) }</span>
+										<div class="break-all font-mono text-xs text-muted-foreground">{ peer.PublicKey }</div>
+									}
+									@table.Cell() {
+										<div class="flex flex-wrap gap-1">
+											for _, ip := range peer.AllowedIPs {
+												@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+													{ ip }
+												}
+											}
+										</div>
+									}
+									@table.Cell(table.CellProps{Class: "text-right whitespace-nowrap"}) {
+										@button.Button(button.Props{
+											Href:    fmt.Sprintf("/wireguard/peers/%d/config?networkId=%d", peer.ID, network.ID),
+											Variant: button.VariantOutline,
+											Size:    button.SizeSm,
+										}) {
+											Конфіг
+										}
+										@button.Button(button.Props{
+											Href:    fmt.Sprintf("/vpn/wireguard/peers/%d/config/download", peer.ID),
+											Variant: button.VariantOutline,
+											Size:    button.SizeSm,
+										}) {
+											@icon.Download(icon.Props{Class: "size-4"})
+										}
+										@button.Button(button.Props{
+											Href:    fmt.Sprintf("/wireguard/peers/%d/qr?networkId=%d", peer.ID, network.ID),
+											Variant: button.VariantOutline,
+											Size:    button.SizeSm,
+										}) {
+											@icon.QrCode(icon.Props{Class: "size-4"})
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

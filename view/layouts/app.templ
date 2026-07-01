@@ -1,0 +1,59 @@
+package layouts
+
+import (
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
+	"github.com/FortiBrine/VoidShift/view/components/ui/sidebar"
+)
+
+templ App(title string, active string) {
+	@Shell(title) {
+		@sidebar.Layout() {
+			@sidebar.Sidebar() {
+				@sidebar.Header() {
+					<div class="flex items-center gap-2 px-2 py-1.5">
+						@icon.Shield(icon.Props{Class: "size-5"})
+						<span class="text-sm font-semibold">VoidShift</span>
+					</div>
+				}
+				@sidebar.Content() {
+					@sidebar.Group() {
+						@sidebar.Menu() {
+							@sidebar.MenuItem() {
+								@sidebar.MenuButton(sidebar.MenuButtonProps{
+									Href:     "/wireguard",
+									IsActive: active == "wireguard",
+								}) {
+									@icon.Router(icon.Props{Class: "size-4"})
+									<span>WireGuard</span>
+								}
+							}
+						}
+					}
+				}
+				@sidebar.Footer() {
+					<form method="post" action="/logout">
+						@button.Button(button.Props{
+							Type:      button.TypeSubmit,
+							Variant:   button.VariantOutline,
+							FullWidth: true,
+						}) {
+							@icon.LogOut(icon.Props{Class: "size-4"})
+							Вийти
+						}
+					</form>
+				}
+			}
+			@sidebar.Inset() {
+				<header class="flex items-center gap-3 border-b px-4 py-3">
+					@sidebar.Trigger()
+					<span class="text-sm font-medium text-muted-foreground">{ title }</span>
+				</header>
+				<main class="w-full max-w-5xl mx-auto flex-1 p-6">
+					{ children... }
+				</main>
+			}
+		}
+		@sidebar.Script()
+	}
+}

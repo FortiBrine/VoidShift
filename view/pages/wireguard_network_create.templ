@@ -1,0 +1,98 @@
+package pages
+
+import (
+	"strconv"
+
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/components/ui/form"
+	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
+	"github.com/FortiBrine/VoidShift/view/components/ui/input"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
+templ NetworkCreate(name string, address string, listenPort int, fieldErrors map[string][]string) {
+	@layouts.App("Створити мережу", "wireguard") {
+		<div class="mb-6">
+			@button.Button(button.Props{Href: "/wireguard", Variant: button.VariantGhost}) {
+				@icon.ArrowLeft(icon.Props{Class: "size-4"})
+				Назад
+			}
+		</div>
+		@card.Card(card.Props{Class: "max-w-xl"}) {
+			@card.Header() {
+				@card.Title() {
+					Створити мережу
+				}
+				@card.Description() {
+					Новий WireGuard-інтерфейс для peer-підключень
+				}
+			}
+			@card.Content() {
+				<form method="post" action="/wireguard/create-network" class="flex flex-col gap-4">
+					@form.Item() {
+						@form.Label(form.LabelProps{For: "name"}) {
+							Назва мережі
+						}
+						@input.Input(input.Props{
+							ID:       "name",
+							Name:     "name",
+							Value:    name,
+							Required: true,
+							HasError: len(fieldErrors["Name"]) > 0,
+						})
+						for _, msg := range fieldErrors["Name"] {
+							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
+								{ msg }
+							}
+						}
+					}
+					@form.Item() {
+						@form.Label(form.LabelProps{For: "address"}) {
+							CIDR мережі
+						}
+						@input.Input(input.Props{
+							ID:          "address",
+							Name:        "address",
+							Value:       address,
+							Placeholder: "10.8.0.1/24",
+							Required:    true,
+							HasError:    len(fieldErrors["Address"]) > 0,
+						})
+						@form.Description() {
+							Наприклад: 10.8.0.1/24
+						}
+						for _, msg := range fieldErrors["Address"] {
+							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
+								{ msg }
+							}
+						}
+					}
+					@form.Item() {
+						@form.Label(form.LabelProps{For: "listen_port"}) {
+							Порт підключення
+						}
+						@input.Input(input.Props{
+							ID:       "listen_port",
+							Name:     "listen_port",
+							Type:     input.TypeNumber,
+							Value:    strconv.Itoa(listenPort),
+							Required: true,
+							HasError: len(fieldErrors["ListenPort"]) > 0,
+						})
+						for _, msg := range fieldErrors["ListenPort"] {
+							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
+								{ msg }
+							}
+						}
+					}
+					<div class="flex justify-end pt-2">
+						@button.Button(button.Props{Type: button.TypeSubmit}) {
+							Створити
+						}
+					</div>
+				</form>
+			}
+		}
+	}
+}

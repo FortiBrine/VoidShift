@@ -1,0 +1,51 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
+	"github.com/FortiBrine/VoidShift/view/components/ui/textarea"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
+func backToNetworkPath(networkID uint) string {
+	if networkID == 0 {
+		return "/wireguard"
+	}
+	return fmt.Sprintf("/wireguard/networks/%d", networkID)
+}
+
+templ PeerConfig(peerID uint, networkID uint, config string) {
+	@layouts.App(fmt.Sprintf("Конфіг peer-а #%d", peerID), "wireguard") {
+		<div class="mb-6 flex items-center justify-between">
+			@button.Button(button.Props{Href: backToNetworkPath(networkID), Variant: button.VariantGhost}) {
+				@icon.ArrowLeft(icon.Props{Class: "size-4"})
+				Назад
+			}
+			@button.Button(button.Props{
+				Href:    fmt.Sprintf("/vpn/wireguard/peers/%d/config/download", peerID),
+				Variant: button.VariantOutline,
+			}) {
+				@icon.Download(icon.Props{Class: "size-4"})
+				Завантажити конфіг
+			}
+		</div>
+		@card.Card() {
+			@card.Header() {
+				@card.Title() {
+					{ fmt.Sprintf("Конфіг peer-а #%d", peerID) }
+				}
+			}
+			@card.Content() {
+				@textarea.Textarea(textarea.Props{
+					Value:    config,
+					Rows:     16,
+					Readonly: true,
+					Class:    "font-mono text-xs",
+				})
+			}
+		}
+	}
+}

@@ -23,5 +23,5 @@ func RegisterRoutes(
 		wireGuardService,
 	)
 
-	webui.RegisterRoutes(app)
+	webui.RegisterRoutes(app, authService, wireGuardService)
 }

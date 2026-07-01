@@ -1,0 +1,87 @@
+package pages
+
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/FortiBrine/VoidShift/internal/wireguard"
+	"github.com/FortiBrine/VoidShift/view/components/ui/alert"
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
+	"github.com/FortiBrine/VoidShift/view/components/ui/table"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
+templ Networks(networks []wireguard.Network, errorMsg string) {
+	@layouts.App("WireGuard", "wireguard") {
+		<div class="mb-6 flex items-center justify-between">
+			<div>
+				<h1 class="text-2xl font-semibold">WireGuard</h1>
+				<p class="text-sm text-muted-foreground">Керування мережами та peer-конфігами</p>
+			</div>
+			@button.Button(button.Props{Href: "/wireguard/create-network"}) {
+				@icon.Plus(icon.Props{Class: "size-4"})
+				Створити мережу
+			}
+		</div>
+		if errorMsg != "" {
+			@alert.Alert(alert.Props{Variant: alert.VariantDestructive, Class: "mb-6"}) {
+				@alert.Description() {
+					{ errorMsg }
+				}
+			}
+		}
+		@card.Card() {
+			if len(networks) == 0 {
+				@card.Content() {
+					<p class="py-10 text-center text-sm text-muted-foreground">Мереж поки немає. Створи першу WireGuard-мережу.</p>
+				}
+			} else {
+				@table.Table() {
+					@table.Header() {
+						@table.Row() {
+							@table.Head() {
+								Назва
+							}
+							@table.Head() {
+								CIDR
+							}
+							@table.Head() {
+								Порт
+							}
+							@table.Head() {
+							}
+						}
+					}
+					@table.Body() {
+						for _, network := range networks {
+							@table.Row() {
+								@table.Cell() {
+									<a href={ templ.SafeURL(fmt.Sprintf("/wireguard/networks/%d", network.ID)) } class="font-medium hover:underline">
+										{ network.Name }
+									</a>
+								}
+								@table.Cell() {
+									{ network.Address }
+								}
+								@table.Cell() {
+									{ strconv.Itoa(network.ListenPort) }
+								}
+								@table.Cell(table.CellProps{Class: "text-right"}) {
+									@button.Button(button.Props{
+										Href:    fmt.Sprintf("/wireguard/networks/%d", network.ID),
+										Variant: button.VariantGhost,
+										Size:    button.SizeSm,
+									}) {
+										@icon.ChevronRight(icon.Props{Class: "size-4"})
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

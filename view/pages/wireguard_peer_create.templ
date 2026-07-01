@@ -1,0 +1,63 @@
+package pages
+
+import (
+	"fmt"
+
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/components/ui/form"
+	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
+	"github.com/FortiBrine/VoidShift/view/components/ui/input"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
+templ PeerCreate(networkID uint, ip string, fieldErrors map[string][]string) {
+	@layouts.App("Додати peer", "wireguard") {
+		<div class="mb-6">
+			@button.Button(button.Props{Href: fmt.Sprintf("/wireguard/networks/%d", networkID), Variant: button.VariantGhost}) {
+				@icon.ArrowLeft(icon.Props{Class: "size-4"})
+				Назад до мережі
+			}
+		</div>
+		@card.Card(card.Props{Class: "max-w-xl"}) {
+			@card.Header() {
+				@card.Title() {
+					Додати peer
+				}
+				@card.Description() {
+					Створи новий peer для цієї мережі
+				}
+			}
+			@card.Content() {
+				<form method="post" action={ templ.SafeURL(fmt.Sprintf("/wireguard/networks/%d/peers/create", networkID)) } class="flex flex-col gap-4">
+					@form.Item() {
+						@form.Label(form.LabelProps{For: "ip"}) {
+							IP peer-а
+						}
+						@input.Input(input.Props{
+							ID:       "ip",
+							Name:     "ip",
+							Value:    ip,
+							Placeholder: "10.8.0.2",
+							Required: true,
+							HasError: len(fieldErrors["IP"]) > 0,
+						})
+						@form.Description() {
+							Наприклад: 10.8.0.2
+						}
+						for _, msg := range fieldErrors["IP"] {
+							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
+								{ msg }
+							}
+						}
+					}
+					<div class="flex justify-end pt-2">
+						@button.Button(button.Props{Type: button.TypeSubmit}) {
+							Додати peer
+						}
+					</div>
+				</form>
+			}
+		}
+	}
+}

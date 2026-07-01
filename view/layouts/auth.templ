@@ -1,0 +1,11 @@
+package layouts
+
+templ Auth(title string) {
+	@Shell(title) {
+		<div class="flex min-h-svh items-center justify-center p-6">
+			<div class="w-full max-w-sm">
+				{ children... }
+			</div>
+		</div>
+	}
+}

@@ -1,0 +1,73 @@
+package pages
+
+import (
+	"github.com/FortiBrine/VoidShift/view/components/ui/alert"
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/components/ui/form"
+	"github.com/FortiBrine/VoidShift/view/components/ui/input"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
+templ Login(username string, formError string, fieldErrors map[string][]string) {
+	@layouts.Auth("Вхід") {
+		@card.Card() {
+			@card.Header() {
+				@card.Title() {
+					Вхід у VoidShift
+				}
+				@card.Description() {
+					Self-hosted панель керування WireGuard
+				}
+			}
+			@card.Content() {
+				if formError != "" {
+					@alert.Alert(alert.Props{Variant: alert.VariantDestructive, Class: "mb-4"}) {
+						@alert.Description() {
+							{ formError }
+						}
+					}
+				}
+				<form method="post" action="/login" class="flex flex-col gap-4">
+					@form.Item() {
+						@form.Label(form.LabelProps{For: "username"}) {
+							Логін
+						}
+						@input.Input(input.Props{
+							ID:       "username",
+							Name:     "username",
+							Value:    username,
+							Required: true,
+							HasError: len(fieldErrors["Username"]) > 0,
+						})
+						for _, msg := range fieldErrors["Username"] {
+							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
+								{ msg }
+							}
+						}
+					}
+					@form.Item() {
+						@form.Label(form.LabelProps{For: "password"}) {
+							Пароль
+						}
+						@input.Input(input.Props{
+							ID:       "password",
+							Name:     "password",
+							Type:     input.TypePassword,
+							Required: true,
+							HasError: len(fieldErrors["Password"]) > 0,
+						})
+						for _, msg := range fieldErrors["Password"] {
+							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
+								{ msg }
+							}
+						}
+					}
+					@button.Button(button.Props{Type: button.TypeSubmit, FullWidth: true}) {
+						Увійти
+					}
+				</form>
+			}
+		}
+	}
+}

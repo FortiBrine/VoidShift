@@ -1,21 +1,44 @@
 package webui
 
 import (
-	"github.com/FortiBrine/VoidShift/view/pages"
+	"github.com/FortiBrine/VoidShift/internal/auth"
+	"github.com/FortiBrine/VoidShift/internal/middleware"
+	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"
 )
 
 func RegisterRoutes(
-	router fiber.Router,
+	app *fiber.App,
+	authService *auth.Service,
+	wireGuardService *wireguard.Service,
 ) {
-	router.Get("/static*", static.New("static", static.Config{
+	handler := NewHandler(authService, wireGuardService)
+
+	app.Get("/static*", static.New("static", static.Config{
 		FS: StaticFS,
 	}))
 
-	router.Get("/", func(c fiber.Ctx) error {
-		return Render(c, pages.Home())
-	})
+	app.Get("/", handler.Home)
+	app.Get("/login", handler.LoginPage)
+	app.Post("/login", handler.Login)
+	app.Post("/logout", handler.Logout)
 
-	router.Use(NotFoundMiddleware)
+	wg := app.Group("/wireguard").Use(middleware.NewAuth(middleware.AuthConfig{
+		Unauthorized: func(c fiber.Ctx) error {
+			return c.Redirect().To("/login")
+		},
+	}))
+	wg.Get("/", handler.Networks)
+	wg.Get("/create-network", handler.NetworkCreatePage)
+	wg.Post("/create-network", handler.NetworkCreate)
+	wg.Get("/networks/:id", handler.NetworkDetail)
+	wg.Post("/networks/:id/up", handler.NetworkUp)
+	wg.Post("/networks/:id/down", handler.NetworkDown)
+	wg.Get("/networks/:id/peers/create", handler.PeerCreatePage)
+	wg.Post("/networks/:id/peers/create", handler.PeerCreate)
+	wg.Get("/peers/:peerId/config", handler.PeerConfig)
+	wg.Get("/peers/:peerId/qr", handler.PeerQR)
+
+	app.Use(NotFoundMiddleware)
 }
