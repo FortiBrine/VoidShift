@@ -5,7 +5,7 @@
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](compose.yml)
 [![License](https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-blue.svg)](#license)
-![Platform](https://img.shields.io/badge/platform-Linux-orange)
+![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20FreeBSD%20%7C%20OpenBSD%20%7C%20macOS%20%7C%20Windows-orange)
 
 VPN management panel for VPS servers. Single binary with an embedded, server-rendered web UI.
 Currently supports WireGuard, with more protocols planned.
@@ -16,17 +16,24 @@ Currently supports WireGuard, with more protocols planned.
 
 ### Features
 
-- **WireGuard management**: create networks, bring interfaces up or down, add and remove peers
-- **Peer configs and QR codes**: download `.conf` files or scan a QR code directly from the UI
-- **Single binary**: the web UI (templ + Tailwind, server-rendered) is embedded into the Go binary at build time, one file to deploy
-- **Session-based auth**: bootstrap admin credentials via environment variables
-- **Docker-ready**: `docker compose up` and it's running
+- Create and manage WireGuard networks and peers; bring interfaces up or down from the web UI or API
+- Download peer `.conf` files or display them as a QR code
+- The web UI is server-rendered (templ + Tailwind) and compiled into the binary at build time, one file to deploy
+- Admin credentials come from environment variables and are bootstrapped on startup
+- Ships with `compose.yml` for one-command deployment
 
 ---
 
 ### Supported operating systems
 
-Linux only. The WireGuard control plane uses `netlink` and `wgctrl`, both of which depend on Linux kernel APIs; the binary hard-fails to build or run on any other `GOOS`.
+| OS | Status | Notes |
+|---|---|---|
+| Linux | Stable | Full support via `netlink` + `wgctrl` |
+| FreeBSD / OpenBSD | Experimental | Interface management via `ifconfig`; interface names are auto-generated (`wg0`, `wg1`, …) |
+| macOS (Darwin) | Experimental | Userspace WireGuard via `golang.zx2c4.com/wireguard`; requires `utun` interface support |
+| Windows | Experimental | Userspace WireGuard via `golang.zx2c4.com/wireguard`; address configuration via `netsh` |
+
+> Experimental platforms compile and run but haven't been tested in production. Interface state is in-memory only and lost on process restart; re-running "up" after a restart may conflict with the still-running kernel interface.
 
 ---
 
@@ -133,8 +140,8 @@ assets/app.css           # Tailwind v4 source (built to internal/webui/static/ap
 ### Roadmap
 
 - MySQL as an alternative to SQLite
-- FreeBSD support
 - Additional VPN protocols beyond WireGuard
+- Stable non-Linux support (persistent interface state across restarts)
 
 ---
 

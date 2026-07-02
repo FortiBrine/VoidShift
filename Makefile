@@ -1,37 +1,31 @@
 SHELL := /bin/sh
 
-FRONTEND_DIR := frontend
-FRONTEND_OUT := $(FRONTEND_DIR)/.output/public
-EMBED_DIR := internal/webui/dist
 APP_OUT := app
+CSS_IN  := assets/app.css
+CSS_OUT := internal/webui/static/app.css
 
-.PHONY: all frontend backend build clean deps generate
+.PHONY: all generate build run css css-watch clean
 
-all: build
-
-build: frontend backend
-
-deps:
-	cd $(FRONTEND_DIR) && bun install --frozen-lockfile
-	go mod download && go mod verify
-
-frontend:
-	cd $(FRONTEND_DIR) && bun install --frozen-lockfile
-	cd $(FRONTEND_DIR) && bun run generate
+all: generate css build
 
 generate:
 	go tool sqlc generate
+	go tool templ generate
 
-backend: frontend generate
-	rm -rf $(EMBED_DIR)
-	mkdir -p $(EMBED_DIR)
-	cp -R $(FRONTEND_OUT)/. $(EMBED_DIR)/
-	CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-w -s" -o $(APP_OUT) ./cmd/api
+css:
+	bunx @tailwindcss/cli -i $(CSS_IN) -o $(CSS_OUT)
+
+css-watch:
+	bunx @tailwindcss/cli -i $(CSS_IN) -o $(CSS_OUT) --watch
+
+build:
+	go build -o $(APP_OUT) ./cmd/api
+
+run: build
+	sudo ./$(APP_OUT)
 
 clean:
-	rm -rf $(FRONTEND_DIR)/.output
-	rm -rf $(FRONTEND_DIR)/.nuxt
-	rm -rf $(EMBED_DIR)
 	rm -f $(APP_OUT)
-	rm -f internal/store/db.go internal/store/models.go internal/store/*.sql.go
+	rm -f $(CSS_OUT)
+	rm -f internal/store/models.go internal/store/db.go internal/store/*.sql.go
 	find view -name '*_templ.go' -delete

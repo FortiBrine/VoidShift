@@ -13,7 +13,6 @@ func NewSqliteDatabase(cfg config.Config) (*sql.DB, error) {
 		return nil, err
 	}
 
-	// SQLite supports only one concurrent writer.
 	db.SetMaxOpenConns(1)
 
 	if err := db.Ping(); err != nil {

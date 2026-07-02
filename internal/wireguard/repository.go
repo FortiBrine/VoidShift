@@ -63,7 +63,6 @@ func (r *SqlcRepository) GetNetworkWithPeers(ctx context.Context, networkID uint
 		return nil, err
 	}
 
-	// Fetch all allowed IPs for this network's peers in one query.
 	ipRows, err := r.q.GetAllowedIPsByNetworkID(ctx, int64(networkID))
 	if err != nil {
 		return nil, err

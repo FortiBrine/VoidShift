@@ -128,7 +128,8 @@ func (s *Service) RemovePeer(
 		return err
 	}
 
-	up, err := IsDeviceUp(network.Name)
+	iface := IfaceName(network.Name, network.ID)
+	up, err := IsDeviceUp(iface)
 	if err != nil {
 		return fmt.Errorf("failed to check device state: %w", err)
 	}
@@ -142,7 +143,7 @@ func (s *Service) RemovePeer(
 		return fmt.Errorf("failed to parse peer public key: %w", err)
 	}
 
-	err = s.client.ConfigureDevice(network.Name, wgtypes.Config{
+	err = s.client.ConfigureDevice(iface, wgtypes.Config{
 		Peers: []wgtypes.PeerConfig{
 			{
 				PublicKey: publicKey,
@@ -248,7 +249,8 @@ func (s *Service) RemoveNetwork(
 
 		return fmt.Errorf("failed to get network: %w", err)
 	}
-	if err = RemoveDevice(network.Name); err != nil {
+	iface := IfaceName(network.Name, network.ID)
+	if err = RemoveDevice(iface); err != nil {
 		return fmt.Errorf("failed to remove device: %w", err)
 	}
 
@@ -291,11 +293,12 @@ func (s *Service) UpNetwork(
 		return err
 	}
 
-	if err := CreateDevice(network.Name); err != nil {
+	iface := IfaceName(network.Name, network.ID)
+	if err := CreateDevice(iface); err != nil {
 		return fmt.Errorf("failed to create device: %w", err)
 	}
 
-	if err := SetDeviceAddress(network.Name, network.Address); err != nil {
+	if err := SetDeviceAddress(iface, network.Address); err != nil {
 		return fmt.Errorf("failed to set device address: %w", err)
 	}
 
@@ -338,7 +341,7 @@ func (s *Service) UpNetwork(
 		}
 	}
 
-	if err := s.client.ConfigureDevice(network.Name, wgtypes.Config{
+	if err := s.client.ConfigureDevice(iface, wgtypes.Config{
 		PrivateKey:   &privateKey,
 		ListenPort:   &network.ListenPort,
 		ReplacePeers: true,
@@ -363,7 +366,8 @@ func (s *Service) DownNetwork(
 		return fmt.Errorf("failed to get network: %w", err)
 	}
 
-	if err = RemoveDevice(network.Name); err != nil {
+	iface := IfaceName(network.Name, network.ID)
+	if err = RemoveDevice(iface); err != nil {
 		return fmt.Errorf("failed to remove device: %w", err)
 	}
 

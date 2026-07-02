@@ -1,3 +1,5 @@
+//go:build linux
+
 package wireguard
 
 import (
@@ -7,6 +9,10 @@ import (
 
 	"github.com/vishvananda/netlink"
 )
+
+func IfaceName(name string, _ uint) string {
+	return name
+}
 
 func CreateDevice(name string) error {
 	link := &netlink.Wireguard{
@@ -74,6 +80,9 @@ func IsDeviceUp(name string) (bool, error) {
 func RemoveDevice(name string) error {
 	link, err := netlink.LinkByName(name)
 	if err != nil {
+		if _, ok := errors.AsType[netlink.LinkNotFoundError](err); ok {
+			return nil
+		}
 		return err
 	}
 

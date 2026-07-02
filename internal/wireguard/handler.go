@@ -12,7 +12,7 @@ type Handler struct {
 }
 
 type GenerateNetworkRequest struct {
-	Name       string `json:"name" validate:"required,min=4,max=100" message:"Name must be between 4 and 100 characters"`
+	Name       string `json:"name" validate:"required,min=4,max=15,alphanum" message:"Name must be alphanumeric and between 4 and 15 characters"`
 	Address    string `json:"address" validate:"required,cidr" message:"Address must be CIDR"`
 	ListenPort int    `json:"listen_port" validate:"required,min=1024,max=65535" message:"ListenPort must be between 1024 and 65535"`
 }
