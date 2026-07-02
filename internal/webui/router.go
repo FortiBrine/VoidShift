@@ -12,12 +12,15 @@ func RegisterRoutes(
 	app *fiber.App,
 	authService *auth.Service,
 	wireGuardService *wireguard.Service,
+	isDevelopment bool,
 ) {
 	handler := NewHandler(authService, wireGuardService)
 
 	app.Get("/static*", static.New("static", static.Config{
 		FS: StaticFS,
 	}))
+
+	registerComponentScripts(app, isDevelopment)
 
 	app.Get("/", handler.Home)
 	app.Get("/login", handler.LoginPage)

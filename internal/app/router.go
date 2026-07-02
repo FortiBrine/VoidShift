@@ -12,6 +12,7 @@ func RegisterRoutes(
 	app *fiber.App,
 	authService *auth.Service,
 	wireGuardService *wireguard.Service,
+	isDevelopment bool,
 ) {
 	api := app.Group("/api")
 	api.Get("/health", Health)
@@ -23,5 +24,5 @@ func RegisterRoutes(
 		wireGuardService,
 	)
 
-	webui.RegisterRoutes(app, authService, wireGuardService)
+	webui.RegisterRoutes(app, authService, wireGuardService, isDevelopment)
 }
