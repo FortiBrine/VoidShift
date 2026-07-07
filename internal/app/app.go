@@ -98,7 +98,7 @@ func NewApp(
 	})
 
 	middleware.Register(fiberApp, l, cfg, sessionConfig)
-	RegisterRoutes(fiberApp, authService, wireGuardService, cfg.Environment.IsDev())
+	RegisterRoutes(fiberApp, authService, wireGuardService, cfg.Environment)
 
 	app = new(App{
 		fiber:            fiberApp,

@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/FortiBrine/VoidShift/internal/auth"
+	"github.com/FortiBrine/VoidShift/internal/config"
 	"github.com/FortiBrine/VoidShift/internal/middleware"
 	"github.com/FortiBrine/VoidShift/internal/webui"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
@@ -12,7 +13,7 @@ func RegisterRoutes(
 	app *fiber.App,
 	authService *auth.Service,
 	wireGuardService *wireguard.Service,
-	isDevelopment bool,
+	env config.Environment,
 ) {
 	api := app.Group("/api")
 	api.Get("/health", Health)
@@ -24,5 +25,5 @@ func RegisterRoutes(
 		wireGuardService,
 	)
 
-	webui.RegisterRoutes(app, authService, wireGuardService, isDevelopment)
+	webui.RegisterRoutes(app, authService, wireGuardService, env)
 }

@@ -2,8 +2,10 @@ package webui
 
 import (
 	"github.com/FortiBrine/VoidShift/internal/auth"
+	"github.com/FortiBrine/VoidShift/internal/config"
 	"github.com/FortiBrine/VoidShift/internal/middleware"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
+	"github.com/FortiBrine/VoidShift/view/pages"
 	"github.com/gofiber/fiber/v3"
 	"github.com/gofiber/fiber/v3/middleware/static"
 )
@@ -12,7 +14,7 @@ func RegisterRoutes(
 	app *fiber.App,
 	authService *auth.Service,
 	wireGuardService *wireguard.Service,
-	isDevelopment bool,
+	env config.Environment,
 ) {
 	handler := NewHandler(authService, wireGuardService)
 
@@ -20,7 +22,7 @@ func RegisterRoutes(
 		FS: StaticFS,
 	}))
 
-	registerComponentScripts(app, isDevelopment)
+	registerComponentScripts(app, env.IsDev())
 
 	app.Get("/", handler.Home)
 	app.Get("/login", handler.LoginPage)
@@ -43,5 +45,8 @@ func RegisterRoutes(
 	wg.Get("/peers/:peerId/config", handler.PeerConfig)
 	wg.Get("/peers/:peerId/qr", handler.PeerQR)
 
-	app.Use(NotFoundMiddleware)
+	app.Use(func(c fiber.Ctx) error {
+		c.Status(fiber.StatusNotFound)
+		return Render(c, pages.NotFound(localizer(c)))
+	})
 }

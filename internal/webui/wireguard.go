@@ -8,7 +8,7 @@ import (
 	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/internal/validator"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
-	"github.com/FortiBrine/VoidShift/view/pages"
+	pages "github.com/FortiBrine/VoidShift/view/pages/wireguard"
 	"github.com/gofiber/fiber/v3"
 )
 
