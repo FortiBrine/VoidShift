@@ -22,19 +22,37 @@ func NewService(repository Repository) *Service {
 }
 
 func (s *Service) Load(ctx context.Context, cfg config.Config) error {
-	if cfg.AdminUsername != "" && cfg.AdminPassword != "" {
+	return s.loadAdminUser(ctx, cfg)
+}
+
+func (s *Service) loadAdminUser(ctx context.Context, cfg config.Config) error {
+	if cfg.AdminUsername == "" {
+		return nil
+	}
+
+	var passwordHash string
+	switch {
+	case cfg.AdminPasswordHash != "":
+		if _, err := bcrypt.Cost([]byte(cfg.AdminPasswordHash)); err != nil {
+			return fmt.Errorf("invalid ADMIN_PASSWORD_HASH: %w", err)
+		}
+		passwordHash = cfg.AdminPasswordHash
+	case cfg.AdminPassword != "":
 		hashed, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcryptCost)
 		if err != nil {
 			return fmt.Errorf("hashing admin password: %w", err)
 		}
+		passwordHash = string(hashed)
+	default:
+		return nil
+	}
 
-		if err = s.CreateUser(ctx, &User{
-			Username:     cfg.AdminUsername,
-			PasswordHash: string(hashed),
-			Admin:        true,
-		}); err != nil {
-			return fmt.Errorf("creating admin user: %w", err)
-		}
+	if err := s.CreateUser(ctx, &User{
+		Username:     cfg.AdminUsername,
+		PasswordHash: passwordHash,
+		Admin:        true,
+	}); err != nil {
+		return fmt.Errorf("creating admin user: %w", err)
 	}
 
 	return nil

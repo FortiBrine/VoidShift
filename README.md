@@ -54,8 +54,8 @@ Open [http://localhost:8080](http://localhost:8080) and log in with your admin c
 #### Manual build
 
 Builds run through [mise](https://mise.jdx.dev): it pins the exact Go and Bun versions
-(`mise.toml`) and downloads them itself on first run, so nothing needs to be pre-installed —
-same command on Linux, macOS, or Windows.
+(`mise.toml`) and downloads them itself on first run, so nothing needs to be pre-installed.
+Same command on Linux, macOS, or Windows.
 
 ```sh
 cp .env.example .env
@@ -69,7 +69,7 @@ sudo ./app    # NET_ADMIN privileges required for WireGuard
 ```
 
 Other tasks: `mise run install`, `mise run generate`, `mise run assets`, `mise run run`,
-`mise run clean` — see `mise.toml` for the full task graph.
+`mise run clean`. See `mise.toml` for the full task graph.
 
 ---
 
@@ -85,7 +85,14 @@ All configuration is via environment variables (loaded from `.env` if present). 
 | `GRACEFUL_TIMEOUT` | `5s` | Graceful shutdown timeout |
 | `ADMIN_USERNAME` | `admin` | Bootstrap admin username (upserted on every boot) |
 | `ADMIN_PASSWORD` | `password` | Bootstrap admin password (upserted on every boot) |
+| `ADMIN_PASSWORD_HASH` | _(unset)_ | Pre-computed bcrypt hash of the admin password; if set, takes priority over `ADMIN_PASSWORD` |
 | `ENVIRONMENT` | `dev` | Set to `prod` to disable debug logging and enforce the session cookie's `Secure` flag |
+
+To avoid keeping a plaintext password in `.env`, generate a bcrypt hash with `htpasswd` (from `apache2-utils` on Debian/Ubuntu, `httpd-tools` on RHEL/Fedora) and set it as `ADMIN_PASSWORD_HASH` instead of `ADMIN_PASSWORD`:
+
+```sh
+htpasswd -bnBC 12 "" 'your-password' | cut -d: -f2
+```
 
 ---
 
