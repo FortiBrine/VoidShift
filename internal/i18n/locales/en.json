@@ -1,0 +1,65 @@
+{
+  "layout.logout": "Log out",
+
+  "login.title": "Sign in",
+  "login.card_title": "Sign in to VoidShift",
+  "login.card_description": "Self-hosted WireGuard management panel",
+  "login.username_label": "Username",
+  "login.password_label": "Password",
+  "login.submit": "Sign in",
+  "login.error_invalid_credentials": "Invalid username or password",
+  "login.validation.username": "Username must be 4-30 letters or digits",
+  "login.validation.password": "Password must be 8-40 characters",
+
+  "not_found.title": "Page not found",
+  "not_found.description": "This page doesn't exist or was moved",
+  "not_found.home_button": "Go home",
+
+  "networks.subtitle": "Manage networks and peer configs",
+  "networks.create_button": "Create network",
+  "networks.empty": "No networks yet. Create your first WireGuard network.",
+  "networks.name_column": "Name",
+  "networks.port_column": "Port",
+
+  "network_create.title": "Create network",
+  "network_create.back": "Back",
+  "network_create.card_description": "New WireGuard interface for peer connections",
+  "network_create.name_label": "Network name",
+  "network_create.address_label": "Network CIDR",
+  "network_create.address_hint": "e.g. 10.8.0.1/24",
+  "network_create.port_label": "Listen port",
+  "network_create.submit": "Create",
+  "network_create.validation.name": "Name must be 4-100 characters",
+  "network_create.validation.address": "Address must be in CIDR format",
+  "network_create.validation.listen_port": "Port must be between 1024-65535",
+
+  "network_detail.back": "Back to networks",
+  "network_detail.title": "Network #{{.ID}}",
+  "network_detail.port_label": "Port",
+  "network_detail.peers_title": "Peers",
+  "network_detail.add_peer": "Add peer",
+  "network_detail.no_peers": "No peers yet.",
+  "network_detail.peer_column": "Peer",
+  "network_detail.allowed_ips_column": "Allowed IPs",
+  "network_detail.peer_label": "Peer #{{.ID}}",
+  "network_detail.config_button": "Config",
+
+  "peer_create.title": "Add peer",
+  "peer_create.back": "Back to network",
+  "peer_create.card_description": "Create a new peer for this network",
+  "peer_create.ip_label": "Peer IP",
+  "peer_create.ip_hint": "e.g. 10.8.0.2",
+  "peer_create.submit": "Add peer",
+  "peer_create.validation.ip": "Enter a valid IPv4 address",
+
+  "peer_config.title": "Peer #{{.ID}} config",
+  "peer_config.back": "Back",
+  "peer_config.download": "Download config",
+
+  "peer_qr.title": "Peer #{{.ID}} QR",
+  "peer_qr.back": "Back",
+  "peer_qr.image_alt": "Peer QR code",
+
+  "wireguard.network_not_found": "Network not found",
+  "wireguard.peer_not_found": "Peer not found"
+}

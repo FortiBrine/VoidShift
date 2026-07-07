@@ -1,6 +1,7 @@
 package pages
 
 import (
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/view/components/ui/alert"
 	"github.com/FortiBrine/VoidShift/view/components/ui/button"
 	"github.com/FortiBrine/VoidShift/view/components/ui/card"
@@ -9,15 +10,15 @@ import (
 	"github.com/FortiBrine/VoidShift/view/layouts"
 )
 
-templ Login(username string, formError string, fieldErrors map[string][]string) {
-	@layouts.Auth("Вхід") {
+templ Login(loc *i18n.Localizer, username string, formError string, fieldErrors map[string][]string) {
+	@layouts.Auth(i18n.T(loc, "login.title")) {
 		@card.Card() {
 			@card.Header() {
 				@card.Title() {
-					Вхід у VoidShift
+					{ i18n.T(loc, "login.card_title") }
 				}
 				@card.Description() {
-					Self-hosted панель керування WireGuard
+					{ i18n.T(loc, "login.card_description") }
 				}
 			}
 			@card.Content() {
@@ -31,7 +32,7 @@ templ Login(username string, formError string, fieldErrors map[string][]string) 
 				<form method="post" action="/login" class="flex flex-col gap-4">
 					@form.Item() {
 						@form.Label(form.LabelProps{For: "username"}) {
-							Логін
+							{ i18n.T(loc, "login.username_label") }
 						}
 						@input.Input(input.Props{
 							ID:       "username",
@@ -42,13 +43,13 @@ templ Login(username string, formError string, fieldErrors map[string][]string) 
 						})
 						for _, msg := range fieldErrors["Username"] {
 							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
-								{ msg }
+								{ i18n.T(loc, msg) }
 							}
 						}
 					}
 					@form.Item() {
 						@form.Label(form.LabelProps{For: "password"}) {
-							Пароль
+							{ i18n.T(loc, "login.password_label") }
 						}
 						@input.Input(input.Props{
 							ID:       "password",
@@ -59,12 +60,12 @@ templ Login(username string, formError string, fieldErrors map[string][]string) 
 						})
 						for _, msg := range fieldErrors["Password"] {
 							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
-								{ msg }
+								{ i18n.T(loc, msg) }
 							}
 						}
 					}
 					@button.Button(button.Props{Type: button.TypeSubmit, FullWidth: true}) {
-						Увійти
+						{ i18n.T(loc, "login.submit") }
 					}
 				</form>
 			}

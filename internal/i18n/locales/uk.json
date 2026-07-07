@@ -1,0 +1,65 @@
+{
+  "layout.logout": "Вийти",
+
+  "login.title": "Вхід",
+  "login.card_title": "Вхід у VoidShift",
+  "login.card_description": "Self-hosted панель керування WireGuard",
+  "login.username_label": "Логін",
+  "login.password_label": "Пароль",
+  "login.submit": "Увійти",
+  "login.error_invalid_credentials": "Невірний логін або пароль",
+  "login.validation.username": "Логін має містити від 4 до 30 літер чи цифр",
+  "login.validation.password": "Пароль має містити від 8 до 40 символів",
+
+  "not_found.title": "Сторінку не знайдено",
+  "not_found.description": "Такої сторінки не існує або її було переміщено",
+  "not_found.home_button": "На головну",
+
+  "networks.subtitle": "Керування мережами та peer-конфігами",
+  "networks.create_button": "Створити мережу",
+  "networks.empty": "Мереж поки немає. Створи першу WireGuard-мережу.",
+  "networks.name_column": "Назва",
+  "networks.port_column": "Порт",
+
+  "network_create.title": "Створити мережу",
+  "network_create.back": "Назад",
+  "network_create.card_description": "Новий WireGuard-інтерфейс для peer-підключень",
+  "network_create.name_label": "Назва мережі",
+  "network_create.address_label": "CIDR мережі",
+  "network_create.address_hint": "Наприклад: 10.8.0.1/24",
+  "network_create.port_label": "Порт підключення",
+  "network_create.submit": "Створити",
+  "network_create.validation.name": "Назва має бути від 4 до 100 символів",
+  "network_create.validation.address": "Адреса має бути в форматі CIDR",
+  "network_create.validation.listen_port": "Порт має бути в межах 1024-65535",
+
+  "network_detail.back": "До списку мереж",
+  "network_detail.title": "Мережа #{{.ID}}",
+  "network_detail.port_label": "Порт",
+  "network_detail.peers_title": "Peer-и",
+  "network_detail.add_peer": "Додати peer",
+  "network_detail.no_peers": "Peer-ів поки немає.",
+  "network_detail.peer_column": "Peer",
+  "network_detail.allowed_ips_column": "Allowed IPs",
+  "network_detail.peer_label": "Peer #{{.ID}}",
+  "network_detail.config_button": "Конфіг",
+
+  "peer_create.title": "Додати peer",
+  "peer_create.back": "Назад до мережі",
+  "peer_create.card_description": "Створи новий peer для цієї мережі",
+  "peer_create.ip_label": "IP peer-а",
+  "peer_create.ip_hint": "Наприклад: 10.8.0.2",
+  "peer_create.submit": "Додати peer",
+  "peer_create.validation.ip": "Вкажи коректну IPv4 адресу",
+
+  "peer_config.title": "Конфіг peer-а #{{.ID}}",
+  "peer_config.back": "Назад",
+  "peer_config.download": "Завантажити конфіг",
+
+  "peer_qr.title": "QR peer-а #{{.ID}}",
+  "peer_qr.back": "Назад",
+  "peer_qr.image_alt": "Peer QR code",
+
+  "wireguard.network_not_found": "Мережу не знайдено",
+  "wireguard.peer_not_found": "Peer не знайдено"
+}

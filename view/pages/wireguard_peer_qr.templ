@@ -3,24 +3,25 @@ package pages
 import (
 	"fmt"
 
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/view/components/ui/button"
 	"github.com/FortiBrine/VoidShift/view/components/ui/card"
 	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
 	"github.com/FortiBrine/VoidShift/view/layouts"
 )
 
-templ PeerQR(peerID uint, networkID uint) {
-	@layouts.App(fmt.Sprintf("QR peer-а #%d", peerID), "wireguard") {
+templ PeerQR(loc *i18n.Localizer, peerID uint, networkID uint) {
+	@layouts.App(loc, i18n.T(loc, "peer_qr.title", map[string]any{"ID": peerID}), "wireguard") {
 		<div class="mb-6">
 			@button.Button(button.Props{Href: backToNetworkPath(networkID), Variant: button.VariantGhost}) {
 				@icon.ArrowLeft(icon.Props{Class: "size-4"})
-				Назад
+				{ i18n.T(loc, "peer_qr.back") }
 			}
 		</div>
 		@card.Card(card.Props{Class: "max-w-xl"}) {
 			@card.Header() {
 				@card.Title() {
-					{ fmt.Sprintf("QR peer-а #%d", peerID) }
+					{ i18n.T(loc, "peer_qr.title", map[string]any{"ID": peerID}) }
 				}
 			}
 			@card.Content(card.ContentProps{Class: "flex justify-center"}) {

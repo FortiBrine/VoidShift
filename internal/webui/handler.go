@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/FortiBrine/VoidShift/internal/auth"
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/internal/validator"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/FortiBrine/VoidShift/view/pages"
@@ -38,15 +39,15 @@ func (h *Handler) Home(c fiber.Ctx) error {
 }
 
 type LoginForm struct {
-	Username string `form:"username" validate:"required,min=4,max=30,alphanum" message:"Логін має містити від 4 до 30 літер чи цифр"`
-	Password string `form:"password" validate:"required,min=8,max=40" message:"Пароль має містити від 8 до 40 символів"`
+	Username string `form:"username" validate:"required,min=4,max=30,alphanum" message:"login.validation.username"`
+	Password string `form:"password" validate:"required,min=8,max=40" message:"login.validation.password"`
 }
 
 func (h *Handler) LoginPage(c fiber.Ctx) error {
 	if isAuthenticated(c) {
 		return c.Redirect().To("/wireguard")
 	}
-	return Render(c, pages.Login("", "", nil))
+	return Render(c, pages.Login(localizer(c), "", "", nil))
 }
 
 func (h *Handler) Login(c fiber.Ctx) error {
@@ -54,10 +55,12 @@ func (h *Handler) Login(c fiber.Ctx) error {
 		return c.Redirect().To("/wireguard")
 	}
 
+	loc := localizer(c)
+
 	req := new(LoginForm)
 	if err := c.Bind().Form(req); err != nil {
 		if validationErr, ok := errors.AsType[*validator.ValidationError](err); ok {
-			return Render(c, pages.Login(req.Username, "", validationErr.Fields))
+			return Render(c, pages.Login(loc, req.Username, "", validationErr.Fields))
 		}
 		return err
 	}
@@ -66,7 +69,7 @@ func (h *Handler) Login(c fiber.Ctx) error {
 
 	err := h.authService.Login(c.Context(), req.Username, req.Password, c.UserAgent(), c.IP())
 	if errors.Is(err, auth.ErrWrongPassword) || errors.Is(err, auth.ErrUserNotFound) {
-		return Render(c, pages.Login(req.Username, "Невірний логін або пароль", nil))
+		return Render(c, pages.Login(loc, req.Username, i18n.T(loc, "login.error_invalid_credentials"), nil))
 	}
 	if err != nil {
 		return err

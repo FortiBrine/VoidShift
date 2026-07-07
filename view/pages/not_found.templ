@@ -1,25 +1,26 @@
 package pages
 
 import (
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/view/components/ui/button"
 	"github.com/FortiBrine/VoidShift/view/components/ui/card"
 	"github.com/FortiBrine/VoidShift/view/layouts"
 )
 
-templ NotFound() {
-	@layouts.Auth("Сторінку не знайдено") {
+templ NotFound(loc *i18n.Localizer) {
+	@layouts.Auth(i18n.T(loc, "not_found.title")) {
 		@card.Card() {
 			@card.Header() {
 				@card.Title() {
 					404
 				}
 				@card.Description() {
-					Такої сторінки не існує або її було переміщено
+					{ i18n.T(loc, "not_found.description") }
 				}
 			}
 			@card.Content() {
 				@button.Button(button.Props{Href: "/", FullWidth: true}) {
-					На головну
+					{ i18n.T(loc, "not_found.home_button") }
 				}
 			}
 		}

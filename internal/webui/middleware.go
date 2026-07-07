@@ -7,5 +7,5 @@ import (
 
 func NotFoundMiddleware(c fiber.Ctx) error {
 	c.Status(fiber.StatusNotFound)
-	return Render(c, pages.NotFound())
+	return Render(c, pages.NotFound(localizer(c)))
 }

@@ -3,6 +3,7 @@ package pages
 import (
 	"strconv"
 
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/view/components/ui/button"
 	"github.com/FortiBrine/VoidShift/view/components/ui/card"
 	"github.com/FortiBrine/VoidShift/view/components/ui/form"
@@ -11,28 +12,28 @@ import (
 	"github.com/FortiBrine/VoidShift/view/layouts"
 )
 
-templ NetworkCreate(name string, address string, listenPort int, fieldErrors map[string][]string) {
-	@layouts.App("Створити мережу", "wireguard") {
+templ NetworkCreate(loc *i18n.Localizer, name string, address string, listenPort int, fieldErrors map[string][]string) {
+	@layouts.App(loc, i18n.T(loc, "network_create.title"), "wireguard") {
 		<div class="mb-6">
 			@button.Button(button.Props{Href: "/wireguard", Variant: button.VariantGhost}) {
 				@icon.ArrowLeft(icon.Props{Class: "size-4"})
-				Назад
+				{ i18n.T(loc, "network_create.back") }
 			}
 		</div>
 		@card.Card(card.Props{Class: "max-w-xl"}) {
 			@card.Header() {
 				@card.Title() {
-					Створити мережу
+					{ i18n.T(loc, "network_create.title") }
 				}
 				@card.Description() {
-					Новий WireGuard-інтерфейс для peer-підключень
+					{ i18n.T(loc, "network_create.card_description") }
 				}
 			}
 			@card.Content() {
 				<form method="post" action="/wireguard/create-network" class="flex flex-col gap-4">
 					@form.Item() {
 						@form.Label(form.LabelProps{For: "name"}) {
-							Назва мережі
+							{ i18n.T(loc, "network_create.name_label") }
 						}
 						@input.Input(input.Props{
 							ID:       "name",
@@ -43,13 +44,13 @@ templ NetworkCreate(name string, address string, listenPort int, fieldErrors map
 						})
 						for _, msg := range fieldErrors["Name"] {
 							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
-								{ msg }
+								{ i18n.T(loc, msg) }
 							}
 						}
 					}
 					@form.Item() {
 						@form.Label(form.LabelProps{For: "address"}) {
-							CIDR мережі
+							{ i18n.T(loc, "network_create.address_label") }
 						}
 						@input.Input(input.Props{
 							ID:          "address",
@@ -60,17 +61,17 @@ templ NetworkCreate(name string, address string, listenPort int, fieldErrors map
 							HasError:    len(fieldErrors["Address"]) > 0,
 						})
 						@form.Description() {
-							Наприклад: 10.8.0.1/24
+							{ i18n.T(loc, "network_create.address_hint") }
 						}
 						for _, msg := range fieldErrors["Address"] {
 							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
-								{ msg }
+								{ i18n.T(loc, msg) }
 							}
 						}
 					}
 					@form.Item() {
 						@form.Label(form.LabelProps{For: "listen_port"}) {
-							Порт підключення
+							{ i18n.T(loc, "network_create.port_label") }
 						}
 						@input.Input(input.Props{
 							ID:       "listen_port",
@@ -82,13 +83,13 @@ templ NetworkCreate(name string, address string, listenPort int, fieldErrors map
 						})
 						for _, msg := range fieldErrors["ListenPort"] {
 							@form.Message(form.MessageProps{Variant: form.MessageVariantError}) {
-								{ msg }
+								{ i18n.T(loc, msg) }
 							}
 						}
 					}
 					<div class="flex justify-end pt-2">
 						@button.Button(button.Props{Type: button.TypeSubmit}) {
-							Створити
+							{ i18n.T(loc, "network_create.submit") }
 						}
 					</div>
 				</form>

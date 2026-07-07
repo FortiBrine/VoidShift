@@ -3,6 +3,7 @@ package pages
 import (
 	"fmt"
 
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/FortiBrine/VoidShift/view/components/ui/badge"
 	"github.com/FortiBrine/VoidShift/view/components/ui/button"
@@ -12,12 +13,12 @@ import (
 	"github.com/FortiBrine/VoidShift/view/layouts"
 )
 
-templ NetworkDetail(network *wireguard.Network) {
-	@layouts.App(fmt.Sprintf("Мережа #%d", network.ID), "wireguard") {
+templ NetworkDetail(loc *i18n.Localizer, network *wireguard.Network) {
+	@layouts.App(loc, i18n.T(loc, "network_detail.title", map[string]any{"ID": network.ID}), "wireguard") {
 		<div class="mb-6 flex items-center justify-between">
 			@button.Button(button.Props{Href: "/wireguard", Variant: button.VariantGhost}) {
 				@icon.ArrowLeft(icon.Props{Class: "size-4"})
-				До списку мереж
+				{ i18n.T(loc, "network_detail.back") }
 			}
 			<div class="flex gap-2">
 				<form method="post" action={ templ.SafeURL(fmt.Sprintf("/wireguard/networks/%d/up", network.ID)) }>
@@ -37,7 +38,7 @@ templ NetworkDetail(network *wireguard.Network) {
 		@card.Card(card.Props{Class: "mb-6"}) {
 			@card.Header() {
 				@card.Title() {
-					{ fmt.Sprintf("Мережа #%d", network.ID) }
+					{ i18n.T(loc, "network_detail.title", map[string]any{"ID": network.ID}) }
 				}
 			}
 			@card.Content() {
@@ -47,7 +48,7 @@ templ NetworkDetail(network *wireguard.Network) {
 						<dd>{ network.Address }</dd>
 					</div>
 					<div>
-						<dt class="text-muted-foreground">Порт</dt>
+						<dt class="text-muted-foreground">{ i18n.T(loc, "network_detail.port_label") }</dt>
 						<dd>{ fmt.Sprintf("%d", network.ListenPort) }</dd>
 					</div>
 					<div class="md:col-span-2">
@@ -60,16 +61,16 @@ templ NetworkDetail(network *wireguard.Network) {
 		@card.Card() {
 			@card.Header(card.HeaderProps{Class: "flex flex-row items-center justify-between"}) {
 				@card.Title() {
-					Peer-и
+					{ i18n.T(loc, "network_detail.peers_title") }
 				}
 				@button.Button(button.Props{Href: fmt.Sprintf("/wireguard/networks/%d/peers/create", network.ID)}) {
 					@icon.Plus(icon.Props{Class: "size-4"})
-					Додати peer
+					{ i18n.T(loc, "network_detail.add_peer") }
 				}
 			}
 			if len(network.Peers) == 0 {
 				@card.Content() {
-					<p class="py-10 text-center text-sm text-muted-foreground">Peer-ів поки немає.</p>
+					<p class="py-10 text-center text-sm text-muted-foreground">{ i18n.T(loc, "network_detail.no_peers") }</p>
 				}
 			} else {
 				@card.Content() {
@@ -77,10 +78,10 @@ templ NetworkDetail(network *wireguard.Network) {
 						@table.Header() {
 							@table.Row() {
 								@table.Head() {
-									Peer
+									{ i18n.T(loc, "network_detail.peer_column") }
 								}
 								@table.Head() {
-									Allowed IPs
+									{ i18n.T(loc, "network_detail.allowed_ips_column") }
 								}
 								@table.Head(table.HeadProps{Class: "text-right"}) {
 								}
@@ -90,7 +91,7 @@ templ NetworkDetail(network *wireguard.Network) {
 							for _, peer := range network.Peers {
 								@table.Row() {
 									@table.Cell() {
-										<span class="font-medium">{ fmt.Sprintf("Peer #%d", peer.ID) }</span>
+										<span class="font-medium">{ i18n.T(loc, "network_detail.peer_label", map[string]any{"ID": peer.ID}) }</span>
 										<div class="break-all font-mono text-xs text-muted-foreground">{ peer.PublicKey }</div>
 									}
 									@table.Cell() {
@@ -108,7 +109,7 @@ templ NetworkDetail(network *wireguard.Network) {
 											Variant: button.VariantOutline,
 											Size:    button.SizeSm,
 										}) {
-											Конфіг
+											{ i18n.T(loc, "network_detail.config_button") }
 										}
 										@button.Button(button.Props{
 											Href:    fmt.Sprintf("/api/vpn/wireguard/peers/%d/config/download", peer.ID),

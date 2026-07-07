@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	"github.com/FortiBrine/VoidShift/view/components/ui/alert"
 	"github.com/FortiBrine/VoidShift/view/components/ui/button"
@@ -13,16 +14,16 @@ import (
 	"github.com/FortiBrine/VoidShift/view/layouts"
 )
 
-templ Networks(networks []wireguard.Network, errorMsg string) {
-	@layouts.App("WireGuard", "wireguard") {
+templ Networks(loc *i18n.Localizer, networks []wireguard.Network, errorMsg string) {
+	@layouts.App(loc, "WireGuard", "wireguard") {
 		<div class="mb-6 flex items-center justify-between">
 			<div>
 				<h1 class="text-2xl font-semibold">WireGuard</h1>
-				<p class="text-sm text-muted-foreground">Керування мережами та peer-конфігами</p>
+				<p class="text-sm text-muted-foreground">{ i18n.T(loc, "networks.subtitle") }</p>
 			</div>
 			@button.Button(button.Props{Href: "/wireguard/create-network"}) {
 				@icon.Plus(icon.Props{Class: "size-4"})
-				Створити мережу
+				{ i18n.T(loc, "networks.create_button") }
 			}
 		</div>
 		if errorMsg != "" {
@@ -35,20 +36,20 @@ templ Networks(networks []wireguard.Network, errorMsg string) {
 		@card.Card() {
 			if len(networks) == 0 {
 				@card.Content() {
-					<p class="py-10 text-center text-sm text-muted-foreground">Мереж поки немає. Створи першу WireGuard-мережу.</p>
+					<p class="py-10 text-center text-sm text-muted-foreground">{ i18n.T(loc, "networks.empty") }</p>
 				}
 			} else {
 				@table.Table() {
 					@table.Header() {
 						@table.Row() {
 							@table.Head() {
-								Назва
+								{ i18n.T(loc, "networks.name_column") }
 							}
 							@table.Head() {
 								CIDR
 							}
 							@table.Head() {
-								Порт
+								{ i18n.T(loc, "networks.port_column") }
 							}
 							@table.Head() {
 							}

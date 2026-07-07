@@ -1,12 +1,13 @@
 package layouts
 
 import (
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/view/components/ui/button"
 	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
 	"github.com/FortiBrine/VoidShift/view/components/ui/sidebar"
 )
 
-templ App(title string, active string) {
+templ App(loc *i18n.Localizer, title string, active string) {
 	@Shell(title) {
 		@sidebar.Layout() {
 			@sidebar.Sidebar() {
@@ -39,7 +40,7 @@ templ App(title string, active string) {
 							FullWidth: true,
 						}) {
 							@icon.LogOut(icon.Props{Class: "size-4"})
-							Вийти
+							{ i18n.T(loc, "layout.logout") }
 						}
 					</form>
 				}
