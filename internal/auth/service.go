@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -35,10 +34,10 @@ func (s *Service) Login(
 ) error {
 	u, err := s.userService.GetByUsername(ctx, username)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, user.ErrNotFound) {
 			return ErrUserNotFound
 		}
-		return fmt.Errorf("failed to get user by username: %w", err)
+		return fmt.Errorf("getting user by username: %w", err)
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)); err != nil {

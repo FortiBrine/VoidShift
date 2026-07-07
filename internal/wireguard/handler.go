@@ -21,6 +21,78 @@ type GeneratePeerRequest struct {
 	AllowedIPs []string `json:"allowed_ips" validate:"required,dive,ipv4" message:"AllowedIPs must be valid IPv4 addresses"`
 }
 
+type NetworkListItemResponse struct {
+	ID         uint   `json:"id"`
+	Name       string `json:"name"`
+	Address    string `json:"address"`
+	ListenPort int    `json:"listen_port"`
+}
+
+type NetworkListResponse struct {
+	Networks []NetworkListItemResponse `json:"networks"`
+}
+
+type NetworkResponse struct {
+	ID         uint   `json:"id"`
+	PublicKey  string `json:"public_key"`
+	Address    string `json:"address"`
+	ListenPort int    `json:"listen_port"`
+}
+
+type NetworkWithPeersResponse struct {
+	NetworkResponse
+	Peers []PeerResponse `json:"peers"`
+}
+
+type PeerResponse struct {
+	ID         uint     `json:"id"`
+	PublicKey  string   `json:"public_key"`
+	AllowedIPs []string `json:"allowed_ips"`
+}
+
+type PeerCreatedResponse struct {
+	ID        uint   `json:"id"`
+	PublicKey string `json:"public_key"`
+}
+
+func newNetworkListItemResponse(network Network) NetworkListItemResponse {
+	return NetworkListItemResponse{
+		ID:         network.ID,
+		Name:       network.Name,
+		Address:    network.Address,
+		ListenPort: network.ListenPort,
+	}
+}
+
+func newNetworkResponse(network *Network) NetworkResponse {
+	return NetworkResponse{
+		ID:         network.ID,
+		PublicKey:  network.PublicKey,
+		Address:    network.Address,
+		ListenPort: network.ListenPort,
+	}
+}
+
+func newNetworkWithPeersResponse(network *Network) NetworkWithPeersResponse {
+	peers := make([]PeerResponse, len(network.Peers))
+	for i, peer := range network.Peers {
+		peers[i] = newPeerResponse(peer)
+	}
+
+	return NetworkWithPeersResponse{
+		NetworkResponse: newNetworkResponse(network),
+		Peers:           peers,
+	}
+}
+
+func newPeerResponse(peer Peer) PeerResponse {
+	return PeerResponse{
+		ID:         peer.ID,
+		PublicKey:  peer.PublicKey,
+		AllowedIPs: peer.AllowedIPs,
+	}
+}
+
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
@@ -30,21 +102,16 @@ func (h *Handler) GetNetworks(c fiber.Ctx) error {
 
 	networks, err := h.service.GetNetworks(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get networks: %w", err)
+		return fmt.Errorf("getting networks: %w", err)
 	}
 
-	networksResult := make([]map[string]any, len(networks))
+	networksResult := make([]NetworkListItemResponse, len(networks))
 	for i, network := range networks {
-		networksResult[i] = map[string]any{
-			"id":          network.ID,
-			"name":        network.Name,
-			"address":     network.Address,
-			"listen_port": network.ListenPort,
-		}
+		networksResult[i] = newNetworkListItemResponse(network)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(map[string]interface{}{
-		"networks": networksResult,
+	return c.Status(fiber.StatusOK).JSON(NetworkListResponse{
+		Networks: networksResult,
 	})
 }
 
@@ -57,15 +124,10 @@ func (h *Handler) GenerateNetwork(c fiber.Ctx) error {
 
 	network, err := h.service.GenerateNetwork(ctx, request.Name, request.Address, request.ListenPort)
 	if err != nil {
-		return fmt.Errorf("failed to generate network: %w", err)
+		return fmt.Errorf("generating network: %w", err)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(map[string]any{
-		"id":          network.ID,
-		"public_key":  network.PublicKey,
-		"address":     network.Address,
-		"listen_port": network.ListenPort,
-	})
+	return c.Status(fiber.StatusCreated).JSON(newNetworkResponse(network))
 }
 
 func (h *Handler) GetNetwork(c fiber.Ctx) error {
@@ -80,24 +142,7 @@ func (h *Handler) GetNetwork(c fiber.Ctx) error {
 		return err
 	}
 
-	peers := make([]map[string]any, len(network.Peers))
-	for i, peer := range network.Peers {
-		peers[i] = map[string]any{
-			"id":          peer.ID,
-			"public_key":  peer.PublicKey,
-			"allowed_ips": peer.AllowedIPs,
-		}
-	}
-
-	return c.Status(fiber.StatusOK).JSON(map[string]any{
-		"id":          network.ID,
-		"public_key":  network.PublicKey,
-		"address":     network.Address,
-		"listen_port": network.ListenPort,
-
-		"peers": peers,
-	})
-
+	return c.Status(fiber.StatusOK).JSON(newNetworkWithPeersResponse(network))
 }
 
 func (h *Handler) RemoveNetwork(c fiber.Ctx) error {
@@ -156,9 +201,9 @@ func (h *Handler) GeneratePeer(c fiber.Ctx) error {
 		return err
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(map[string]any{
-		"id":         peer.ID,
-		"public_key": peer.PublicKey,
+	return c.Status(fiber.StatusCreated).JSON(PeerCreatedResponse{
+		ID:        peer.ID,
+		PublicKey: peer.PublicKey,
 	})
 }
 

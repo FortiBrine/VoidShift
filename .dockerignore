@@ -13,6 +13,7 @@
 /app
 
 # Misc
+.git
 .DS_Store
 .fleet
 .idea

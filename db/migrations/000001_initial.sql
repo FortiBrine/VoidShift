@@ -12,7 +12,8 @@ CREATE TABLE IF NOT EXISTS networks (
     address     TEXT    NOT NULL,
     listen_port INTEGER NOT NULL,
     public_key  TEXT    NOT NULL UNIQUE,
-    private_key TEXT    NOT NULL
+    private_key TEXT    NOT NULL,
+    enabled     INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS peers (

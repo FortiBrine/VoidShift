@@ -20,7 +20,6 @@ import (
 	"github.com/gofiber/fiber/v3/extractors"
 	"github.com/gofiber/fiber/v3/middleware/session"
 	"github.com/gofiber/storage/memory/v2"
-	"github.com/valyala/fasthttp"
 )
 
 type App struct {
@@ -37,7 +36,7 @@ func NewApp(
 ) (app *App, err error) {
 	db, err := store.Open(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open database: %w", err)
+		return nil, fmt.Errorf("opening database: %w", err)
 	}
 	defer func() {
 		if err != nil {
@@ -45,7 +44,7 @@ func NewApp(
 		}
 	}()
 	if err = store.Migrate(ctx, db); err != nil {
-		return nil, fmt.Errorf("failed to migrate database: %w", err)
+		return nil, fmt.Errorf("migrating database: %w", err)
 	}
 
 	sessionConfig := session.Config{
@@ -63,30 +62,30 @@ func NewApp(
 	userRepository := user.NewSqlcRepository(db)
 	userService := user.NewService(userRepository)
 	if err = userService.Load(ctx, cfg); err != nil {
-		return nil, fmt.Errorf("failed to load user service: %w", err)
+		return nil, fmt.Errorf("loading user service: %w", err)
 	}
 
 	authService := auth.NewService(userService)
 
 	wireGuardRepository := wireguard.NewSqlcRepository(db)
-	wireGuardService, err := wireguard.NewService(wireGuardRepository, cfg.HostAddress)
+	wireGuardService, err := wireguard.NewService(wireGuardRepository, cfg.HostAddress, l)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create wireguard service: %w", err)
+		return nil, fmt.Errorf("creating wireguard service: %w", err)
 	}
 	defer func() {
 		if err != nil {
 			_ = wireGuardService.Close()
 		}
 	}()
-	if err = wireGuardService.Load(); err != nil {
-		return nil, fmt.Errorf("failed to load wireguard service: %w", err)
+	if err = wireGuardService.Load(ctx); err != nil {
+		return nil, fmt.Errorf("loading wireguard service: %w", err)
 	}
 
 	fiberApp := fiber.New(fiber.Config{
 		ErrorHandler:    middleware.NewCustomErrorHandler(l),
 		StructValidator: validator.NewCustomValidator(),
 		CaseSensitive:   true,
-		ProxyHeader:     fasthttp.HeaderXForwardedFor,
+		ProxyHeader:     fiber.HeaderXForwardedFor,
 	})
 
 	fiberApp.Hooks().OnListen(func(listenData fiber.ListenData) error {
@@ -117,7 +116,7 @@ func (app *App) Start(ctx context.Context, cfg config.Config) error {
 		ShutdownTimeout:       cfg.GracefulTimeout,
 		DisableStartupMessage: true,
 	}); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return fmt.Errorf("failed to start fiber app: %w", err)
+		return fmt.Errorf("starting fiber app: %w", err)
 	}
 	return nil
 }
@@ -125,12 +124,12 @@ func (app *App) Start(ctx context.Context, cfg config.Config) error {
 func (app *App) Close() error {
 	if app.wireGuardService != nil {
 		if err := app.wireGuardService.Close(); err != nil {
-			return fmt.Errorf("failed to close wireguard service: %w", err)
+			return fmt.Errorf("closing wireguard service: %w", err)
 		}
 	}
 	if app.db != nil {
 		if err := app.db.Close(); err != nil {
-			return fmt.Errorf("failed to close database: %w", err)
+			return fmt.Errorf("closing database: %w", err)
 		}
 	}
 	return nil

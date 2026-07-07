@@ -7,6 +7,7 @@ type Network struct {
 	ListenPort int
 	PublicKey  string
 	PrivateKey string
+	Enabled    bool
 	Peers      []Peer
 }
 

@@ -2,12 +2,13 @@ package wireguard
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/skip2/go-qrcode"
 	"golang.zx2c4.com/wireguard/wgctrl"
@@ -23,11 +24,15 @@ type Service struct {
 	repository  Repository
 	client      *wgctrl.Client
 	hostAddress string
+	logger      *slog.Logger
+
+	mu sync.Mutex
 }
 
 func NewService(
 	repository Repository,
 	hostAddress string,
+	logger *slog.Logger,
 ) (*Service, error) {
 	client, err := wgctrl.New()
 	if err != nil {
@@ -37,10 +42,25 @@ func NewService(
 		repository:  repository,
 		client:      client,
 		hostAddress: hostAddress,
+		logger:      logger,
 	}, nil
 }
 
-func (s *Service) Load() error {
+func (s *Service) Load(ctx context.Context) error {
+	networks, err := s.repository.GetEnabledNetworks(ctx)
+	if err != nil {
+		return fmt.Errorf("getting enabled networks: %w", err)
+	}
+
+	for _, network := range networks {
+		if err := s.UpNetwork(ctx, network.ID); err != nil {
+			s.logger.Error("restoring network on startup",
+				slog.String("network", network.Name),
+				slog.Any("error", err),
+			)
+		}
+	}
+
 	return nil
 }
 
@@ -82,14 +102,14 @@ func (s *Service) GeneratePeer(
 ) (*Peer, error) {
 	privateKey, err := wgtypes.GeneratePrivateKey()
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate private key: %w", err)
+		return nil, fmt.Errorf("generating private key: %w", err)
 	}
 
 	publicKey := privateKey.PublicKey()
 	psk, err := wgtypes.GenerateKey()
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate preshared key: %w", err)
+		return nil, fmt.Errorf("generating preshared key: %w", err)
 	}
 
 	peer := &Peer{
@@ -110,28 +130,26 @@ func (s *Service) RemovePeer(
 	peerID uint,
 ) error {
 	peer, err := s.repository.GetPeer(ctx, peerID)
-
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrPeerNotFound
-		}
-
 		return err
 	}
 
 	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, ErrNetworkNotFound) {
 			return ErrPeerNotFound
 		}
 
 		return err
 	}
 
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	iface := IfaceName(network.Name, network.ID)
 	up, err := IsDeviceUp(iface)
 	if err != nil {
-		return fmt.Errorf("failed to check device state: %w", err)
+		return fmt.Errorf("checking device state: %w", err)
 	}
 
 	if !up {
@@ -140,7 +158,7 @@ func (s *Service) RemovePeer(
 
 	publicKey, err := wgtypes.ParseKey(peer.PublicKey)
 	if err != nil {
-		return fmt.Errorf("failed to parse peer public key: %w", err)
+		return fmt.Errorf("parsing peer public key: %w", err)
 	}
 
 	err = s.client.ConfigureDevice(iface, wgtypes.Config{
@@ -153,7 +171,7 @@ func (s *Service) RemovePeer(
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to remove peer from device: %w", err)
+		return fmt.Errorf("removing peer from device: %w", err)
 	}
 
 	return s.repository.RemovePeer(ctx, peerID)
@@ -165,19 +183,11 @@ func (s *Service) GetPeerConfig(
 ) (string, error) {
 	peer, err := s.repository.GetPeer(ctx, peerID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", ErrPeerNotFound
-		}
-
 		return "", err
 	}
 
 	network, err := s.repository.GetNetwork(ctx, peer.NetworkID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", ErrNetworkNotFound
-		}
-
 		return "", err
 	}
 
@@ -230,7 +240,7 @@ func (s *Service) GetPeerConfigQR(
 
 	qrCode, err := qrcode.Encode(config, qrcode.Medium, 512)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate qr code: %w", err)
+		return nil, fmt.Errorf("generating qr code: %w", err)
 	}
 
 	return qrCode, nil
@@ -240,18 +250,16 @@ func (s *Service) RemoveNetwork(
 	ctx context.Context,
 	networkID uint,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	network, err := s.repository.GetNetwork(ctx, networkID)
-
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrNetworkNotFound
-		}
-
-		return fmt.Errorf("failed to get network: %w", err)
+		return err
 	}
 	iface := IfaceName(network.Name, network.ID)
 	if err = RemoveDevice(iface); err != nil {
-		return fmt.Errorf("failed to remove device: %w", err)
+		return fmt.Errorf("removing device: %w", err)
 	}
 
 	return s.repository.RemoveNetwork(ctx, networkID)
@@ -268,57 +276,47 @@ func (s *Service) GetNetworkWithPeers(
 	ctx context.Context,
 	networkID uint,
 ) (*Network, error) {
-	network, err := s.repository.GetNetworkWithPeers(ctx, networkID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, ErrNetworkNotFound
-		}
-
-		return nil, err
-	}
-
-	return network, err
+	return s.repository.GetNetworkWithPeers(ctx, networkID)
 }
 
 func (s *Service) UpNetwork(
 	ctx context.Context,
 	networkID uint,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	network, err := s.repository.GetNetworkWithPeers(ctx, networkID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrNetworkNotFound
-		}
-
 		return err
 	}
 
 	iface := IfaceName(network.Name, network.ID)
 	if err := CreateDevice(iface); err != nil {
-		return fmt.Errorf("failed to create device: %w", err)
+		return fmt.Errorf("creating device: %w", err)
 	}
 
 	if err := SetDeviceAddress(iface, network.Address); err != nil {
-		return fmt.Errorf("failed to set device address: %w", err)
+		return fmt.Errorf("setting device address: %w", err)
 	}
 
 	privateKey, err := wgtypes.ParseKey(network.PrivateKey)
 	if err != nil {
-		return fmt.Errorf("failed to parse private network key: %w", err)
+		return fmt.Errorf("parsing private network key: %w", err)
 	}
 
 	peers := make([]wgtypes.PeerConfig, len(network.Peers))
 	for i, peer := range network.Peers {
 		publicKey, err := wgtypes.ParseKey(peer.PublicKey)
 		if err != nil {
-			return fmt.Errorf("failed to parse public peer key: %w", err)
+			return fmt.Errorf("parsing public peer key: %w", err)
 		}
 
 		var presharedKey *wgtypes.Key
 		if peer.PresharedKey != "" {
 			psk, err := wgtypes.ParseKey(peer.PresharedKey)
 			if err != nil {
-				return fmt.Errorf("failed to parse preshared key: %w", err)
+				return fmt.Errorf("parsing preshared key: %w", err)
 			}
 			presharedKey = &psk
 		}
@@ -328,7 +326,7 @@ func (s *Service) UpNetwork(
 		for j, allowedIP := range peer.AllowedIPs {
 			_, ipNet, err := net.ParseCIDR(allowedIP + "/32")
 			if err != nil {
-				return fmt.Errorf("failed to parse allowed IP %q: %w", allowedIP, err)
+				return fmt.Errorf("parsing allowed IP %q: %w", allowedIP, err)
 			}
 
 			allowedIPs[j] = *ipNet
@@ -347,31 +345,30 @@ func (s *Service) UpNetwork(
 		ReplacePeers: true,
 		Peers:        peers,
 	}); err != nil {
-		return fmt.Errorf("failed to configure device: %w", err)
+		return fmt.Errorf("configuring device: %w", err)
 	}
 
-	return nil
+	return s.repository.SetNetworkEnabled(ctx, networkID, true)
 }
 
 func (s *Service) DownNetwork(
 	ctx context.Context,
 	networkID uint,
 ) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	network, err := s.repository.GetNetwork(ctx, networkID)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return ErrNetworkNotFound
-		}
-
-		return fmt.Errorf("failed to get network: %w", err)
+		return err
 	}
 
 	iface := IfaceName(network.Name, network.ID)
 	if err = RemoveDevice(iface); err != nil {
-		return fmt.Errorf("failed to remove device: %w", err)
+		return fmt.Errorf("removing device: %w", err)
 	}
 
-	return nil
+	return s.repository.SetNetworkEnabled(ctx, networkID, false)
 }
 
 func (s *Service) Close() error {

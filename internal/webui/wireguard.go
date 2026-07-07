@@ -20,7 +20,7 @@ func (h *Handler) Networks(c fiber.Ctx) error {
 
 	networks, err := h.wireGuardService.GetNetworks(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get networks: %w", err)
+		return fmt.Errorf("getting networks: %w", err)
 	}
 
 	return Render(c, pages.Networks(networks, c.Query("error")))
@@ -48,7 +48,7 @@ func (h *Handler) NetworkCreate(c fiber.Ctx) error {
 	ctx := c.Context()
 	network, err := h.wireGuardService.GenerateNetwork(ctx, req.Name, req.Address, req.ListenPort)
 	if err != nil {
-		return fmt.Errorf("failed to generate network: %w", err)
+		return fmt.Errorf("generating network: %w", err)
 	}
 
 	return c.Redirect().To(fmt.Sprintf("/wireguard/networks/%d", network.ID))
@@ -63,7 +63,7 @@ func (h *Handler) NetworkDetail(c fiber.Ctx) error {
 		return redirectWithError(c, "/wireguard", "Мережу не знайдено")
 	}
 	if err != nil {
-		return fmt.Errorf("failed to get network: %w", err)
+		return fmt.Errorf("getting network: %w", err)
 	}
 
 	return Render(c, pages.NetworkDetail(network))
@@ -77,7 +77,7 @@ func (h *Handler) NetworkUp(c fiber.Ctx) error {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
 			return redirectWithError(c, "/wireguard", "Мережу не знайдено")
 		}
-		return fmt.Errorf("failed to bring network up: %w", err)
+		return fmt.Errorf("bringing network up: %w", err)
 	}
 
 	return c.Redirect().To(fmt.Sprintf("/wireguard/networks/%d", networkID))
@@ -91,7 +91,7 @@ func (h *Handler) NetworkDown(c fiber.Ctx) error {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
 			return redirectWithError(c, "/wireguard", "Мережу не знайдено")
 		}
-		return fmt.Errorf("failed to bring network down: %w", err)
+		return fmt.Errorf("bringing network down: %w", err)
 	}
 
 	return c.Redirect().To(fmt.Sprintf("/wireguard/networks/%d", networkID))
@@ -109,7 +109,7 @@ func (h *Handler) PeerCreatePage(c fiber.Ctx) error {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
 			return redirectWithError(c, "/wireguard", "Мережу не знайдено")
 		}
-		return fmt.Errorf("failed to get network: %w", err)
+		return fmt.Errorf("getting network: %w", err)
 	}
 
 	return Render(c, pages.PeerCreate(networkID, "", nil))
@@ -131,7 +131,7 @@ func (h *Handler) PeerCreate(c fiber.Ctx) error {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
 			return redirectWithError(c, "/wireguard", "Мережу не знайдено")
 		}
-		return fmt.Errorf("failed to generate peer: %w", err)
+		return fmt.Errorf("generating peer: %w", err)
 	}
 
 	return c.Redirect().To(fmt.Sprintf("/wireguard/networks/%d", networkID))
@@ -147,7 +147,7 @@ func (h *Handler) PeerConfig(c fiber.Ctx) error {
 		if errors.Is(err, wireguard.ErrPeerNotFound) {
 			return redirectWithError(c, "/wireguard", "Peer не знайдено")
 		}
-		return fmt.Errorf("failed to get peer config: %w", err)
+		return fmt.Errorf("getting peer config: %w", err)
 	}
 
 	return Render(c, pages.PeerConfig(peerID, networkID, config))

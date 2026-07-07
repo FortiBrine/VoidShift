@@ -1,5 +1,27 @@
 package pages
 
+import (
+	"github.com/FortiBrine/VoidShift/view/components/ui/button"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
 templ NotFound() {
-    <p>404</p>
+	@layouts.Auth("Сторінку не знайдено") {
+		@card.Card() {
+			@card.Header() {
+				@card.Title() {
+					404
+				}
+				@card.Description() {
+					Такої сторінки не існує або її було переміщено
+				}
+			}
+			@card.Content() {
+				@button.Button(button.Props{Href: "/", FullWidth: true}) {
+					На головну
+				}
+			}
+		}
+	}
 }

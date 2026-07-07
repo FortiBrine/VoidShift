@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build freebsd || openbsd || darwin
 
 package wireguard
 
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"runtime"
 	"sync"
 
 	"golang.zx2c4.com/wireguard/conn"
@@ -14,7 +15,10 @@ import (
 	"golang.zx2c4.com/wireguard/tun"
 )
 
-func IfaceName(name string, _ uint) string {
+func IfaceName(name string, id uint) string {
+	if runtime.GOOS == "openbsd" {
+		return fmt.Sprintf("tun%d", id)
+	}
 	return name
 }
 
@@ -22,16 +26,17 @@ type userspaceDevice struct {
 	dev      *device.Device
 	uapi     net.Listener
 	realName string
+	wg       sync.WaitGroup
 }
 
 var (
-	devMu   sync.Mutex
+	mu      sync.Mutex
 	devices = make(map[string]*userspaceDevice)
 )
 
 func CreateDevice(name string) error {
-	devMu.Lock()
-	defer devMu.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
 	if _, ok := devices[name]; ok {
 		return nil
@@ -39,13 +44,13 @@ func CreateDevice(name string) error {
 
 	tdev, err := tun.CreateTUN(name, device.DefaultMTU)
 	if err != nil {
-		return fmt.Errorf("create tun: %w", err)
+		return fmt.Errorf("creating tun: %w", err)
 	}
 
 	realName, err := tdev.Name()
 	if err != nil {
 		tdev.Close()
-		return fmt.Errorf("get tun name: %w", err)
+		return fmt.Errorf("getting tun name: %w", err)
 	}
 
 	dev := device.NewDevice(tdev, conn.NewDefaultBind(), device.NewLogger(device.LogLevelError, ""))
@@ -53,17 +58,20 @@ func CreateDevice(name string) error {
 	uapiFile, err := ipc.UAPIOpen(name)
 	if err != nil {
 		dev.Close()
-		return fmt.Errorf("open uapi: %w", err)
+		return fmt.Errorf("opening uapi: %w", err)
 	}
 
 	uapi, err := ipc.UAPIListen(name, uapiFile)
 	if err != nil {
 		uapiFile.Close()
 		dev.Close()
-		return fmt.Errorf("listen uapi: %w", err)
+		return fmt.Errorf("listening uapi: %w", err)
 	}
 
+	ud := &userspaceDevice{dev: dev, uapi: uapi, realName: realName}
+	ud.wg.Add(1)
 	go func() {
+		defer ud.wg.Done()
 		for {
 			c, err := uapi.Accept()
 			if err != nil {
@@ -73,45 +81,52 @@ func CreateDevice(name string) error {
 		}
 	}()
 
-	devices[name] = &userspaceDevice{dev: dev, uapi: uapi, realName: realName}
+	devices[name] = ud
 	return nil
 }
 
 func SetDeviceAddress(name, address string) error {
-	devMu.Lock()
+	mu.Lock()
 	ud, ok := devices[name]
-	devMu.Unlock()
+	mu.Unlock()
 	if !ok {
 		return fmt.Errorf("device %q not found", name)
 	}
-	ip, _, err := net.ParseCIDR(address)
-	if err != nil {
-		return fmt.Errorf("parse address %q: %w", address, err)
+
+	args := []string{ud.realName, "inet", address}
+	if runtime.GOOS == "darwin" {
+		ip, _, err := net.ParseCIDR(address)
+		if err != nil {
+			return fmt.Errorf("parsing address %q: %w", address, err)
+		}
+		args = append(args, ip.String())
 	}
-	if out, err := exec.Command("ifconfig", ud.realName, "inet", address, ip.String(), "up").CombinedOutput(); err != nil {
-		return fmt.Errorf("ifconfig: %w: %s", err, out)
+	args = append(args, "up")
+
+	if out, err := exec.Command("ifconfig", args...).CombinedOutput(); err != nil {
+		return fmt.Errorf("running ifconfig: %w: %s", err, out)
 	}
 	return nil
 }
 
 func IsDeviceUp(name string) (bool, error) {
-	devMu.Lock()
+	mu.Lock()
+	defer mu.Unlock()
 	_, ok := devices[name]
-	devMu.Unlock()
 	return ok, nil
 }
 
 func RemoveDevice(name string) error {
-	devMu.Lock()
+	mu.Lock()
+	defer mu.Unlock()
 	ud, ok := devices[name]
 	if !ok {
-		devMu.Unlock()
 		return nil
 	}
 	delete(devices, name)
-	devMu.Unlock()
 
 	ud.uapi.Close()
 	ud.dev.Close()
+	ud.wg.Wait()
 	return nil
 }

@@ -6,24 +6,26 @@ require (
 	github.com/a-h/templ v0.3.1020
 	github.com/caarlos0/env/v11 v11.4.1
 	github.com/go-playground/validator/v10 v10.30.3
-	github.com/gofiber/fiber/v3 v3.3.0
+	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/gofiber/storage/memory/v2 v2.1.2
 	github.com/joho/godotenv v1.5.1
-	github.com/pressly/goose/v3 v3.27.1
+	github.com/pressly/goose/v3 v3.27.2
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
-	github.com/valyala/fasthttp v1.71.0
+	github.com/templui/templui v1.12.1
 	github.com/vishvananda/netlink v1.3.1
 	golang.org/x/crypto v0.53.0
+	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446
 	golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10
+	golang.zx2c4.com/wireguard/windows v1.0.1
 	modernc.org/sqlite v1.53.0
 )
 
 require (
 	cel.dev/expr v0.25.1 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
-	github.com/Oudwins/tailwind-merge-go v0.2.0 // indirect
+	github.com/Oudwins/tailwind-merge-go v0.2.1 // indirect
 	github.com/a-h/parse v0.0.0-20250122154542-74294addb73e // indirect
-	github.com/andybalholm/brotli v1.2.1 // indirect
+	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cli/browser v1.3.0 // indirect
@@ -37,19 +39,19 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-sql-driver/mysql v1.9.3 // indirect
+	github.com/go-sql-driver/mysql v1.10.0 // indirect
 	github.com/gofiber/schema v1.8.0 // indirect
-	github.com/gofiber/utils/v2 v2.1.0 // indirect
+	github.com/gofiber/utils/v2 v2.1.1 // indirect
 	github.com/google/cel-go v0.28.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.9.2 // indirect
+	github.com/jackc/pgx/v5 v5.10.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/klauspost/compress v1.18.6 // indirect
+	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
@@ -74,10 +76,10 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/sqlc-dev/doubleclick v1.0.0 // indirect
 	github.com/sqlc-dev/sqlc v1.31.1 // indirect
-	github.com/templui/templui v1.12.1 // indirect
 	github.com/tetratelabs/wazero v1.11.0 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasthttp v1.72.0 // indirect
 	github.com/vishvananda/netns v0.0.5 // indirect
 	github.com/wasilibs/go-pgquery v0.0.0-20250409022910-10ac41983c07 // indirect
 	github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 // indirect
@@ -92,7 +94,6 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/tools v0.46.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
-	golang.zx2c4.com/wireguard v0.0.0-20260522210424-ecfc5a8d5446 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260120221211-b8f7ae30c516 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260420184626-e10c466a9529 // indirect
 	google.golang.org/grpc v1.80.0 // indirect

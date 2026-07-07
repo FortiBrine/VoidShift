@@ -3,6 +3,7 @@ package wireguard
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/FortiBrine/VoidShift/internal/store"
 )
@@ -12,6 +13,8 @@ type Repository interface {
 	GetNetwork(ctx context.Context, networkID uint) (*Network, error)
 	GetNetworkWithPeers(ctx context.Context, networkID uint) (*Network, error)
 	GetNetworks(ctx context.Context) ([]Network, error)
+	GetEnabledNetworks(ctx context.Context) ([]Network, error)
+	SetNetworkEnabled(ctx context.Context, networkID uint, enabled bool) error
 
 	GetPeer(ctx context.Context, peerID uint) (Peer, error)
 	AddPeer(ctx context.Context, peer *Peer) error
@@ -46,6 +49,9 @@ func (r *SqlcRepository) AddNetwork(ctx context.Context, network *Network) error
 func (r *SqlcRepository) GetNetwork(ctx context.Context, networkID uint) (*Network, error) {
 	row, err := r.q.GetNetwork(ctx, int64(networkID))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNetworkNotFound
+		}
 		return nil, err
 	}
 	return new(networkFromDB(row)), nil
@@ -54,6 +60,9 @@ func (r *SqlcRepository) GetNetwork(ctx context.Context, networkID uint) (*Netwo
 func (r *SqlcRepository) GetNetworkWithPeers(ctx context.Context, networkID uint) (*Network, error) {
 	row, err := r.q.GetNetwork(ctx, int64(networkID))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNetworkNotFound
+		}
 		return nil, err
 	}
 	n := networkFromDB(row)
@@ -92,9 +101,35 @@ func (r *SqlcRepository) GetNetworks(ctx context.Context) ([]Network, error) {
 	return networks, nil
 }
 
+func (r *SqlcRepository) GetEnabledNetworks(ctx context.Context) ([]Network, error) {
+	rows, err := r.q.GetEnabledNetworks(ctx)
+	if err != nil {
+		return nil, err
+	}
+	networks := make([]Network, len(rows))
+	for i, row := range rows {
+		networks[i] = networkFromDB(row)
+	}
+	return networks, nil
+}
+
+func (r *SqlcRepository) SetNetworkEnabled(ctx context.Context, networkID uint, enabled bool) error {
+	var e int64
+	if enabled {
+		e = 1
+	}
+	return r.q.SetNetworkEnabled(ctx, store.SetNetworkEnabledParams{
+		ID:      int64(networkID),
+		Enabled: e,
+	})
+}
+
 func (r *SqlcRepository) GetPeer(ctx context.Context, peerID uint) (Peer, error) {
 	row, err := r.q.GetPeer(ctx, int64(peerID))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Peer{}, ErrPeerNotFound
+		}
 		return Peer{}, err
 	}
 	ips, err := r.q.GetPeerAllowedIPs(ctx, int64(peerID))
@@ -180,6 +215,7 @@ func networkFromDB(row store.Network) Network {
 		ListenPort: int(row.ListenPort),
 		PublicKey:  row.PublicKey,
 		PrivateKey: row.PrivateKey,
+		Enabled:    row.Enabled != 0,
 	}
 }
 

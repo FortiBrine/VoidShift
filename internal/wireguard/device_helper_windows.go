@@ -5,32 +5,35 @@ package wireguard
 import (
 	"fmt"
 	"net"
-	"os/exec"
+	"net/netip"
 	"sync"
 
 	"golang.zx2c4.com/wireguard/conn"
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/ipc"
 	"golang.zx2c4.com/wireguard/tun"
-)
-
-type userspaceDevice struct {
-	dev  *device.Device
-	uapi net.Listener
-}
-
-var (
-	devMu   sync.Mutex
-	devices = make(map[string]*userspaceDevice)
+	"golang.zx2c4.com/wireguard/windows/tunnel/winipcfg"
 )
 
 func IfaceName(name string, _ uint) string {
 	return name
 }
 
+type userspaceDevice struct {
+	dev  *device.Device
+	uapi net.Listener
+	luid winipcfg.LUID
+	wg   sync.WaitGroup
+}
+
+var (
+	mu      sync.Mutex
+	devices = make(map[string]*userspaceDevice)
+)
+
 func CreateDevice(name string) error {
-	devMu.Lock()
-	defer devMu.Unlock()
+	mu.Lock()
+	defer mu.Unlock()
 
 	if _, ok := devices[name]; ok {
 		return nil
@@ -38,18 +41,23 @@ func CreateDevice(name string) error {
 
 	tdev, err := tun.CreateTUN(name, device.DefaultMTU)
 	if err != nil {
-		return fmt.Errorf("create tun %q: %w", name, err)
+		return fmt.Errorf("creating tun: %w", err)
 	}
+
+	luid := winipcfg.LUID(tdev.(*tun.NativeTun).LUID())
 
 	dev := device.NewDevice(tdev, conn.NewDefaultBind(), device.NewLogger(device.LogLevelError, ""))
 
 	uapi, err := ipc.UAPIListen(name)
 	if err != nil {
 		dev.Close()
-		return fmt.Errorf("listen uapi: %w", err)
+		return fmt.Errorf("listening uapi: %w", err)
 	}
 
+	ud := &userspaceDevice{dev: dev, uapi: uapi, luid: luid}
+	ud.wg.Add(1)
 	go func() {
+		defer ud.wg.Done()
 		for {
 			c, err := uapi.Accept()
 			if err != nil {
@@ -59,46 +67,48 @@ func CreateDevice(name string) error {
 		}
 	}()
 
-	devices[name] = &userspaceDevice{dev: dev, uapi: uapi}
+	devices[name] = ud
 	return nil
 }
 
 func SetDeviceAddress(name, address string) error {
-	ip, ipNet, err := net.ParseCIDR(address)
+	mu.Lock()
+	ud, ok := devices[name]
+	mu.Unlock()
+	if !ok {
+		return fmt.Errorf("device %q not found", name)
+	}
+
+	prefix, err := netip.ParsePrefix(address)
 	if err != nil {
-		return fmt.Errorf("parse address %q: %w", address, err)
+		return fmt.Errorf("parsing address %q: %w", address, err)
 	}
-	mask := net.IP(ipNet.Mask).String()
-	cmd := exec.Command(
-		"netsh", "interface", "ipv4", "set", "address",
-		"name="+name, "source=static",
-		"address="+ip.String(),
-		"mask="+mask,
-	)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("netsh: %w: %s", err, out)
+
+	if err := ud.luid.SetIPAddresses([]netip.Prefix{prefix}); err != nil {
+		return fmt.Errorf("setting ip addresses: %w", err)
 	}
+
 	return nil
 }
 
 func IsDeviceUp(name string) (bool, error) {
-	devMu.Lock()
+	mu.Lock()
+	defer mu.Unlock()
 	_, ok := devices[name]
-	devMu.Unlock()
 	return ok, nil
 }
 
 func RemoveDevice(name string) error {
-	devMu.Lock()
+	mu.Lock()
+	defer mu.Unlock()
 	ud, ok := devices[name]
 	if !ok {
-		devMu.Unlock()
 		return nil
 	}
 	delete(devices, name)
-	devMu.Unlock()
 
 	ud.uapi.Close()
 	ud.dev.Close()
+	ud.wg.Wait()
 	return nil
 }

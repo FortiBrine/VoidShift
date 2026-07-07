@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FortiBrine/VoidShift/internal/config"
@@ -9,6 +10,8 @@ import (
 )
 
 const bcryptCost = 12
+
+var ErrNotFound = errors.New("user not found")
 
 type Service struct {
 	repository Repository
@@ -22,7 +25,7 @@ func (s *Service) Load(ctx context.Context, cfg config.Config) error {
 	if cfg.AdminUsername != "" && cfg.AdminPassword != "" {
 		hashed, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcryptCost)
 		if err != nil {
-			return fmt.Errorf("failed to hash admin password: %w", err)
+			return fmt.Errorf("hashing admin password: %w", err)
 		}
 
 		if err = s.CreateUser(ctx, &User{
@@ -30,7 +33,7 @@ func (s *Service) Load(ctx context.Context, cfg config.Config) error {
 			PasswordHash: string(hashed),
 			Admin:        true,
 		}); err != nil {
-			return fmt.Errorf("failed to create admin user: %w", err)
+			return fmt.Errorf("creating admin user: %w", err)
 		}
 	}
 

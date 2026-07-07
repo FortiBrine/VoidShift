@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/FortiBrine/VoidShift/internal/store"
 )
@@ -36,6 +37,9 @@ func (r *SqlcRepository) CreateUser(ctx context.Context, user *User) error {
 func (r *SqlcRepository) GetByID(ctx context.Context, id uint) (*User, error) {
 	row, err := r.q.GetUserByID(ctx, int64(id))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return fromDB(row), nil
@@ -44,6 +48,9 @@ func (r *SqlcRepository) GetByID(ctx context.Context, id uint) (*User, error) {
 func (r *SqlcRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
 	row, err := r.q.GetUserByUsername(ctx, username)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
 		return nil, err
 	}
 	return fromDB(row), nil

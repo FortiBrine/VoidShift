@@ -29,9 +29,9 @@ Currently supports WireGuard, with more protocols planned.
 | OS | Status | Notes |
 |---|---|---|
 | Linux | Stable | Full support via `netlink` + `wgctrl` |
-| FreeBSD / OpenBSD | Experimental | Interface management via `ifconfig`; interface names are auto-generated (`wg0`, `wg1`, …) |
+| FreeBSD / OpenBSD | Experimental | Userspace WireGuard via `golang.zx2c4.com/wireguard`; OpenBSD interface names are auto-generated (`tun0`, `tun1`, …) since `tun(4)` can't be renamed |
 | macOS (Darwin) | Experimental | Userspace WireGuard via `golang.zx2c4.com/wireguard`; requires `utun` interface support |
-| Windows | Experimental | Userspace WireGuard via `golang.zx2c4.com/wireguard`; address configuration via `netsh` |
+| Windows | Experimental | Userspace WireGuard via `golang.zx2c4.com/wireguard`; address configuration via the IP Helper API (`winipcfg`) |
 
 > Experimental platforms compile and run but haven't been tested in production. Interface state is in-memory only and lost on process restart; re-running "up" after a restart may conflict with the still-running kernel interface.
 
