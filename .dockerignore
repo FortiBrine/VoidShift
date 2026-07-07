@@ -1,27 +1,23 @@
-# Frontend
 /node_modules
 /internal/webui/static/*
 
-# Backend — sqlc-generated files (regenerated during build)
 /internal/store/*
 !/internal/store/database.go
 !/internal/store/migrate.go
 !/internal/store/sqlite.go
 /view/**/*_templ.go
 
-# Build output
 /app
 
-# Misc
-.git
 .DS_Store
 .fleet
 .idea
 *.db
-frontend.oldnuxt
 
 .env*
 !.env.example
+
+.git
 
 LICENSE-MIT
 LICENSE-APACHE

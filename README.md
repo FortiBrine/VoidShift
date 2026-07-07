@@ -53,21 +53,23 @@ Open [http://localhost:8080](http://localhost:8080) and log in with your admin c
 
 #### Manual build
 
+Builds run through [mise](https://mise.jdx.dev): it pins the exact Go and Bun versions
+(`mise.toml`) and downloads them itself on first run, so nothing needs to be pre-installed —
+same command on Linux, macOS, or Windows.
+
 ```sh
 cp .env.example .env
 # Edit .env
 
-go mod download
-bun install
+curl https://mise.run | sh   # or: winget install jdx.mise / scoop install mise / brew install mise
 
-go tool sqlc generate                                                      # generate internal/store from db/queries + db/migrations
-go tool templ generate                                                     # generate view/**/*_templ.go from *.templ files
-bunx @tailwindcss/cli -i assets/app.css -o internal/webui/static/app.css   # build CSS embedded into the binary
-
-go build -o app ./cmd/api
+mise run build   # generate (sqlc + templ) -> bundle frontend deps (assets/ + templui via bun) -> go build -o app ./cmd/api
 
 sudo ./app    # NET_ADMIN privileges required for WireGuard
 ```
+
+Other tasks: `mise run install`, `mise run generate`, `mise run assets`, `mise run run`,
+`mise run clean` — see `mise.toml` for the full task graph.
 
 ---
 
@@ -132,7 +134,8 @@ view/
 db/
   migrations/            # goose SQL migrations
   queries/               # sqlc input queries
-assets/app.css           # Tailwind v4 source (built to internal/webui/static/app.css)
+assets/                  # Frontend dependency sources (Tailwind v4 entrypoint), bundled via bun into internal/webui/static/app.css
+mise.toml                # Pinned Go/Bun toolchain + build tasks (mise run build)
 ```
 
 ---
