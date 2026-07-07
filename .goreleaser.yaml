@@ -1,0 +1,43 @@
+version: 2
+
+before:
+  hooks:
+    - go tool sqlc generate
+    - go tool templ generate
+    - bun install
+    - bunx @tailwindcss/cli -i assets/app.css -o internal/webui/static/app.css
+    - go tool go-licenses check ./cmd/api --disallowed_types=forbidden,restricted,unknown
+    - sh -c "go tool go-licenses report ./cmd/api > third-party-licenses.csv"
+
+builds:
+  - id: voidshift
+    main: ./cmd/api
+    binary: voidshift
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE-MIT
+      - LICENSE-APACHE
+      - README.md
+      - third-party-licenses.csv
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
