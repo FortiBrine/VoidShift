@@ -19,3 +19,8 @@ type Peer struct {
 	PresharedKey string
 	AllowedIPs   []string
 }
+
+type Stats struct {
+	NetworkCount int
+	PeerCount    int
+}

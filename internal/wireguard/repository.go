@@ -20,6 +20,9 @@ type Repository interface {
 	AddPeer(ctx context.Context, peer *Peer) error
 	RemovePeer(ctx context.Context, peerID uint) error
 	RemoveNetwork(ctx context.Context, networkID uint) error
+
+	CountNetworks(ctx context.Context) (int, error)
+	CountPeers(ctx context.Context) (int, error)
 }
 
 type SqlcRepository struct {
@@ -205,6 +208,16 @@ func (r *SqlcRepository) RemoveNetwork(ctx context.Context, networkID uint) erro
 		return err
 	}
 	return tx.Commit()
+}
+
+func (r *SqlcRepository) CountNetworks(ctx context.Context) (int, error) {
+	count, err := r.q.CountNetworks(ctx)
+	return int(count), err
+}
+
+func (r *SqlcRepository) CountPeers(ctx context.Context) (int, error) {
+	count, err := r.q.CountPeers(ctx)
+	return int(count), err
 }
 
 func networkFromDB(row store.Network) Network {

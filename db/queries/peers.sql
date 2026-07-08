@@ -16,3 +16,6 @@ DELETE FROM peers WHERE id = ?;
 
 -- name: DeletePeersByNetworkID :exec
 DELETE FROM peers WHERE network_id = ?;
+
+-- name: CountPeers :one
+SELECT COUNT(*) FROM peers;

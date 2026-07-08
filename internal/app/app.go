@@ -11,6 +11,7 @@ import (
 
 	"github.com/FortiBrine/VoidShift/internal/auth"
 	"github.com/FortiBrine/VoidShift/internal/config"
+	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/internal/middleware"
 	"github.com/FortiBrine/VoidShift/internal/store"
 	"github.com/FortiBrine/VoidShift/internal/user"
@@ -81,6 +82,11 @@ func NewApp(
 		return nil, fmt.Errorf("loading wireguard service: %w", err)
 	}
 
+	i18nService := i18n.NewService()
+	if err = i18nService.LoadTranslations(); err != nil {
+		return nil, fmt.Errorf("loading translations: %w", err)
+	}
+
 	fiberApp := fiber.New(fiber.Config{
 		ErrorHandler:    middleware.NewCustomErrorHandler(l),
 		StructValidator: validator.NewCustomValidator(),
@@ -98,7 +104,7 @@ func NewApp(
 	})
 
 	middleware.Register(fiberApp, l, cfg, sessionConfig)
-	RegisterRoutes(fiberApp, authService, wireGuardService, cfg.Environment)
+	RegisterRoutes(fiberApp, authService, wireGuardService, i18nService, cfg.HostAddress, cfg.Environment)
 
 	app = new(App{
 		fiber:            fiberApp,

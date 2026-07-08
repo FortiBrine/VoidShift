@@ -22,6 +22,15 @@ templ App(loc *i18n.Localizer, title string, active string) {
 						@sidebar.Menu() {
 							@sidebar.MenuItem() {
 								@sidebar.MenuButton(sidebar.MenuButtonProps{
+									Href:     "/",
+									IsActive: active == "dashboard",
+								}) {
+									@icon.LayoutDashboard(icon.Props{Class: "size-4"})
+									<span>{ i18n.T(loc, "layout.dashboard") }</span>
+								}
+							}
+							@sidebar.MenuItem() {
+								@sidebar.MenuButton(sidebar.MenuButtonProps{
 									Href:     "/wireguard",
 									IsActive: active == "wireguard",
 								}) {

@@ -1,5 +1,13 @@
 {
   "layout.logout": "Вийти",
+  "layout.dashboard": "Панель",
+
+  "dashboard.title": "Панель",
+  "dashboard.subtitle": "Огляд сервера",
+  "dashboard.server_ip": "IP сервера",
+  "dashboard.uptime": "Час роботи",
+  "dashboard.networks": "Мережі",
+  "dashboard.peers": "Peer-и",
 
   "login.title": "Вхід",
   "login.card_title": "Вхід у VoidShift",

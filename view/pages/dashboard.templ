@@ -1,0 +1,40 @@
+package pages
+
+import (
+	"strconv"
+
+	"github.com/FortiBrine/VoidShift/internal/i18n"
+	"github.com/FortiBrine/VoidShift/internal/wireguard"
+	"github.com/FortiBrine/VoidShift/view/components/ui/card"
+	"github.com/FortiBrine/VoidShift/view/components/ui/icon"
+	"github.com/FortiBrine/VoidShift/view/layouts"
+)
+
+templ Dashboard(loc *i18n.Localizer, hostAddress string, uptime string, stats wireguard.Stats) {
+	@layouts.App(loc, i18n.T(loc, "dashboard.title"), "dashboard") {
+		<div class="mb-6">
+			<h1 class="text-2xl font-semibold">{ i18n.T(loc, "dashboard.title") }</h1>
+			<p class="text-sm text-muted-foreground">{ i18n.T(loc, "dashboard.subtitle") }</p>
+		</div>
+		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			@statCard(icon.Server, i18n.T(loc, "dashboard.server_ip"), hostAddress)
+			@statCard(icon.Clock, i18n.T(loc, "dashboard.uptime"), uptime)
+			@statCard(icon.Network, i18n.T(loc, "dashboard.networks"), strconv.Itoa(stats.NetworkCount))
+			@statCard(icon.Users, i18n.T(loc, "dashboard.peers"), strconv.Itoa(stats.PeerCount))
+		</div>
+	}
+}
+
+templ statCard(renderIcon func(...icon.Props) templ.Component, label string, value string) {
+	@card.Card() {
+		@card.Content(card.ContentProps{Class: "flex items-center gap-4"}) {
+			<div class="flex size-10 items-center justify-center rounded-md bg-muted">
+				@renderIcon(icon.Props{Class: "size-5"})
+			</div>
+			<div>
+				<p class="text-sm text-muted-foreground">{ label }</p>
+				<p class="text-lg font-semibold">{ value }</p>
+			</div>
+		}
+	}
+}

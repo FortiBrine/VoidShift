@@ -1,5 +1,13 @@
 {
   "layout.logout": "Log out",
+  "layout.dashboard": "Dashboard",
+
+  "dashboard.title": "Dashboard",
+  "dashboard.subtitle": "Server overview",
+  "dashboard.server_ip": "Server IP",
+  "dashboard.uptime": "Uptime",
+  "dashboard.networks": "Networks",
+  "dashboard.peers": "Peers",
 
   "login.title": "Sign in",
   "login.card_title": "Sign in to VoidShift",

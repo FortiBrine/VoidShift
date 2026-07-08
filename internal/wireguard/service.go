@@ -371,6 +371,22 @@ func (s *Service) DownNetwork(
 	return s.repository.SetNetworkEnabled(ctx, networkID, false)
 }
 
+func (s *Service) GetStats(
+	ctx context.Context,
+) (Stats, error) {
+	networkCount, err := s.repository.CountNetworks(ctx)
+	if err != nil {
+		return Stats{}, fmt.Errorf("counting networks: %w", err)
+	}
+
+	peerCount, err := s.repository.CountPeers(ctx)
+	if err != nil {
+		return Stats{}, fmt.Errorf("counting peers: %w", err)
+	}
+
+	return Stats{NetworkCount: networkCount, PeerCount: peerCount}, nil
+}
+
 func (s *Service) Close() error {
 	return s.client.Close()
 }

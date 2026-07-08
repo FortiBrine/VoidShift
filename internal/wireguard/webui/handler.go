@@ -7,13 +7,29 @@ import (
 
 	"github.com/FortiBrine/VoidShift/internal/i18n"
 	"github.com/FortiBrine/VoidShift/internal/validator"
+	"github.com/FortiBrine/VoidShift/internal/webui"
 	"github.com/FortiBrine/VoidShift/internal/wireguard"
 	pages "github.com/FortiBrine/VoidShift/view/pages/wireguard"
 	"github.com/gofiber/fiber/v3"
 )
 
-func redirectWithError(c fiber.Ctx, path string, messageID string) error {
-	message := i18n.T(localizer(c), messageID)
+type Handler struct {
+	wireGuardService *wireguard.Service
+	i18nService      *i18n.Service
+}
+
+func NewHandler(
+	wireGuardService *wireguard.Service,
+	i18nService *i18n.Service,
+) *Handler {
+	return &Handler{
+		wireGuardService: wireGuardService,
+		i18nService:      i18nService,
+	}
+}
+
+func (h *Handler) redirectWithError(c fiber.Ctx, path string, messageID string) error {
+	message := i18n.T(webui.Localizer(h.i18nService, c), messageID)
 	return c.Redirect().To(path + "?error=" + url.QueryEscape(message))
 }
 
@@ -25,7 +41,7 @@ func (h *Handler) Networks(c fiber.Ctx) error {
 		return fmt.Errorf("getting networks: %w", err)
 	}
 
-	return Render(c, pages.Networks(localizer(c), networks, c.Query("error")))
+	return webui.Render(c, pages.Networks(webui.Localizer(h.i18nService, c), networks, c.Query("error")))
 }
 
 type NetworkCreateForm struct {
@@ -35,14 +51,14 @@ type NetworkCreateForm struct {
 }
 
 func (h *Handler) NetworkCreatePage(c fiber.Ctx) error {
-	return Render(c, pages.NetworkCreate(localizer(c), "", "10.8.0.1/24", 51820, nil))
+	return webui.Render(c, pages.NetworkCreate(webui.Localizer(h.i18nService, c), "", "10.8.0.1/24", 51820, nil))
 }
 
 func (h *Handler) NetworkCreate(c fiber.Ctx) error {
 	req := new(NetworkCreateForm)
 	if err := c.Bind().Form(req); err != nil {
 		if validationErr, ok := errors.AsType[*validator.ValidationError](err); ok {
-			return Render(c, pages.NetworkCreate(localizer(c), req.Name, req.Address, req.ListenPort, validationErr.Fields))
+			return webui.Render(c, pages.NetworkCreate(webui.Localizer(h.i18nService, c), req.Name, req.Address, req.ListenPort, validationErr.Fields))
 		}
 		return err
 	}
@@ -62,13 +78,13 @@ func (h *Handler) NetworkDetail(c fiber.Ctx) error {
 
 	network, err := h.wireGuardService.GetNetworkWithPeers(ctx, networkID)
 	if errors.Is(err, wireguard.ErrNetworkNotFound) {
-		return redirectWithError(c, "/wireguard", "wireguard.network_not_found")
+		return h.redirectWithError(c, "/wireguard", "wireguard.network_not_found")
 	}
 	if err != nil {
 		return fmt.Errorf("getting network: %w", err)
 	}
 
-	return Render(c, pages.NetworkDetail(localizer(c), network))
+	return webui.Render(c, pages.NetworkDetail(webui.Localizer(h.i18nService, c), network))
 }
 
 func (h *Handler) NetworkUp(c fiber.Ctx) error {
@@ -77,7 +93,7 @@ func (h *Handler) NetworkUp(c fiber.Ctx) error {
 
 	if err := h.wireGuardService.UpNetwork(ctx, networkID); err != nil {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
-			return redirectWithError(c, "/wireguard", "wireguard.network_not_found")
+			return h.redirectWithError(c, "/wireguard", "wireguard.network_not_found")
 		}
 		return fmt.Errorf("bringing network up: %w", err)
 	}
@@ -91,7 +107,7 @@ func (h *Handler) NetworkDown(c fiber.Ctx) error {
 
 	if err := h.wireGuardService.DownNetwork(ctx, networkID); err != nil {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
-			return redirectWithError(c, "/wireguard", "wireguard.network_not_found")
+			return h.redirectWithError(c, "/wireguard", "wireguard.network_not_found")
 		}
 		return fmt.Errorf("bringing network down: %w", err)
 	}
@@ -109,12 +125,12 @@ func (h *Handler) PeerCreatePage(c fiber.Ctx) error {
 
 	if _, err := h.wireGuardService.GetNetwork(ctx, networkID); err != nil {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
-			return redirectWithError(c, "/wireguard", "wireguard.network_not_found")
+			return h.redirectWithError(c, "/wireguard", "wireguard.network_not_found")
 		}
 		return fmt.Errorf("getting network: %w", err)
 	}
 
-	return Render(c, pages.PeerCreate(localizer(c), networkID, "", nil))
+	return webui.Render(c, pages.PeerCreate(webui.Localizer(h.i18nService, c), networkID, "", nil))
 }
 
 func (h *Handler) PeerCreate(c fiber.Ctx) error {
@@ -123,7 +139,7 @@ func (h *Handler) PeerCreate(c fiber.Ctx) error {
 	req := new(PeerCreateForm)
 	if err := c.Bind().Form(req); err != nil {
 		if validationErr, ok := errors.AsType[*validator.ValidationError](err); ok {
-			return Render(c, pages.PeerCreate(localizer(c), networkID, req.IP, validationErr.Fields))
+			return webui.Render(c, pages.PeerCreate(webui.Localizer(h.i18nService, c), networkID, req.IP, validationErr.Fields))
 		}
 		return err
 	}
@@ -131,7 +147,7 @@ func (h *Handler) PeerCreate(c fiber.Ctx) error {
 	ctx := c.Context()
 	if _, err := h.wireGuardService.GeneratePeer(ctx, networkID, []string{req.IP}); err != nil {
 		if errors.Is(err, wireguard.ErrNetworkNotFound) {
-			return redirectWithError(c, "/wireguard", "wireguard.network_not_found")
+			return h.redirectWithError(c, "/wireguard", "wireguard.network_not_found")
 		}
 		return fmt.Errorf("generating peer: %w", err)
 	}
@@ -147,17 +163,17 @@ func (h *Handler) PeerConfig(c fiber.Ctx) error {
 	config, err := h.wireGuardService.GetPeerConfig(ctx, peerID)
 	if err != nil {
 		if errors.Is(err, wireguard.ErrPeerNotFound) {
-			return redirectWithError(c, "/wireguard", "wireguard.peer_not_found")
+			return h.redirectWithError(c, "/wireguard", "wireguard.peer_not_found")
 		}
 		return fmt.Errorf("getting peer config: %w", err)
 	}
 
-	return Render(c, pages.PeerConfig(localizer(c), peerID, networkID, config))
+	return webui.Render(c, pages.PeerConfig(webui.Localizer(h.i18nService, c), peerID, networkID, config))
 }
 
 func (h *Handler) PeerQR(c fiber.Ctx) error {
 	peerID := fiber.Params[uint](c, "peerId")
 	networkID := fiber.Query[uint](c, "networkId", 0)
 
-	return Render(c, pages.PeerQR(localizer(c), peerID, networkID))
+	return webui.Render(c, pages.PeerQR(webui.Localizer(h.i18nService, c), peerID, networkID))
 }

@@ -5,36 +5,40 @@ import (
 	"encoding/json"
 	"fmt"
 
-	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
 )
 
 //go:embed locales/*.json
 var localeFS embed.FS
 
-type Localizer = goi18n.Localizer
+type Localizer = i18n.Localizer
 
-var bundle = mustLoadBundle()
-
-func mustLoadBundle() *goi18n.Bundle {
-	b := goi18n.NewBundle(language.Ukrainian)
-	b.RegisterUnmarshalFunc("json", json.Unmarshal)
-
-	for _, path := range []string{"locales/uk.json", "locales/en.json"} {
-		if _, err := b.LoadMessageFileFS(localeFS, path); err != nil {
-			panic(fmt.Errorf("i18n: loading %s: %w", path, err))
-		}
-	}
-
-	return b
+type Service struct {
+	bundle *i18n.Bundle
 }
 
-func FromAcceptLanguage(header string) *Localizer {
-	return goi18n.NewLocalizer(bundle, header)
+func NewService() *Service {
+	bundle := i18n.NewBundle(language.Ukrainian)
+	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
+	return &Service{bundle: bundle}
+}
+
+func (s *Service) LoadTranslations() error {
+	for _, path := range []string{"locales/uk.json", "locales/en.json"} {
+		if _, err := s.bundle.LoadMessageFileFS(localeFS, path); err != nil {
+			return fmt.Errorf("i18n: loading %s: %w", path, err)
+		}
+	}
+	return nil
+}
+
+func (s *Service) FromAcceptLanguage(header string) *Localizer {
+	return i18n.NewLocalizer(s.bundle, header)
 }
 
 func T(l *Localizer, messageID string, data ...map[string]any) string {
-	cfg := &goi18n.LocalizeConfig{MessageID: messageID}
+	cfg := &i18n.LocalizeConfig{MessageID: messageID}
 	if len(data) > 0 {
 		cfg.TemplateData = data[0]
 	}

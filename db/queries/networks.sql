@@ -20,3 +20,6 @@ UPDATE networks SET enabled = ? WHERE id = ?;
 
 -- name: DeleteNetwork :exec
 DELETE FROM networks WHERE id = ?;
+
+-- name: CountNetworks :one
+SELECT COUNT(*) FROM networks;
