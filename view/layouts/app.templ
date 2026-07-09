@@ -42,16 +42,31 @@ templ App(loc *i18n.Localizer, title string, active string) {
 					}
 				}
 				@sidebar.Footer() {
-					<form method="post" action="/logout">
+					<div class="flex items-center gap-2">
 						@button.Button(button.Props{
-							Type:      button.TypeSubmit,
-							Variant:   button.VariantOutline,
-							FullWidth: true,
+							ID:      "theme-toggle",
+							Type:    button.TypeButton,
+							Variant: button.VariantOutline,
+							Size:    button.SizeIcon,
+							Class:   "relative shrink-0",
+							Attributes: templ.Attributes{
+								"aria-label": i18n.T(loc, "layout.toggle_theme"),
+							},
 						}) {
-							@icon.LogOut(icon.Props{Class: "size-4"})
-							{ i18n.T(loc, "layout.logout") }
+							@icon.Sun(icon.Props{Class: "size-4 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90"})
+							@icon.Moon(icon.Props{Class: "absolute size-4 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0"})
 						}
-					</form>
+						<form method="post" action="/logout" class="flex-1">
+							@button.Button(button.Props{
+								Type:      button.TypeSubmit,
+								Variant:   button.VariantOutline,
+								FullWidth: true,
+							}) {
+								@icon.LogOut(icon.Props{Class: "size-4"})
+								{ i18n.T(loc, "layout.logout") }
+							}
+						</form>
+					</div>
 				}
 			}
 			@sidebar.Inset() {
@@ -65,5 +80,11 @@ templ App(loc *i18n.Localizer, title string, active string) {
 			}
 		}
 		@sidebar.Script()
+		<script>
+			document.getElementById("theme-toggle").addEventListener("click", function () {
+				var isDark = document.documentElement.classList.toggle("dark");
+				document.cookie = "voidshift_theme=" + (isDark ? "dark" : "light") + ";path=/;max-age=31536000;samesite=lax";
+			});
+		</script>
 	}
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/FortiBrine/VoidShift/internal/config"
 	"github.com/FortiBrine/VoidShift/internal/i18n"
+	"github.com/FortiBrine/VoidShift/view/layouts"
 	"github.com/FortiBrine/VoidShift/view/pages"
 	"github.com/a-h/templ"
 	"github.com/gofiber/fiber/v3"
@@ -31,7 +32,8 @@ func RegisterNotFoundHandler(app *fiber.App, i18nService *i18n.Service) {
 
 func Render(c fiber.Ctx, component templ.Component) error {
 	c.Set("Content-Type", "text/html")
-	return component.Render(c.Context(), c.Response().BodyWriter())
+	ctx := layouts.WithTheme(c.Context(), c.Cookies("voidshift_theme") == "dark")
+	return component.Render(ctx, c.Response().BodyWriter())
 }
 
 func Localizer(

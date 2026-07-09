@@ -7,7 +7,7 @@ import (
 
 templ Shell(title string) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang="en" class={ templ.KV("dark", isDarkFromContext(ctx)) }>
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>

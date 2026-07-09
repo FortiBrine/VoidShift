@@ -1,6 +1,7 @@
 {
   "layout.logout": "Вийти",
   "layout.dashboard": "Панель",
+  "layout.toggle_theme": "Перемкнути тему",
 
   "dashboard.title": "Панель",
   "dashboard.subtitle": "Огляд сервера",

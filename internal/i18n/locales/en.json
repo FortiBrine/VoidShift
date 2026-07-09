@@ -1,6 +1,7 @@
 {
   "layout.logout": "Log out",
   "layout.dashboard": "Dashboard",
+  "layout.toggle_theme": "Toggle theme",
 
   "dashboard.title": "Dashboard",
   "dashboard.subtitle": "Server overview",
